@@ -1,0 +1,1282 @@
+:root{
+  --bg:#070B09; --s1:#0C1310; --s2:#121C17; --s3:#18251F;
+  --line:#1B2822; --line-2:#2A3B33;
+  --fg:#EEF4F1; --fg-2:#9DB0A7; --fg-3:#788A81;
+  --ac:#6EE7B7; --ac-2:#2DD4A7; --ac-w:rgba(110,231,183,.09);
+  --gold:#D8C89A; --gold-w:rgba(216,200,154,.10);
+  --up:#6EE7B7; --up-w:rgba(110,231,183,.13);
+  --dn:#E8877C; --dn-w:rgba(232,135,124,.13);
+  --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  --r:8px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--mono);
+  font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+/* kisi halus — tekstur terminal, bukan hiasan: menandai halaman ini alat baca */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:52px 52px;
+  -webkit-mask-image:radial-gradient(80rem 50rem at 50% 0,#000,transparent 78%);
+          mask-image:radial-gradient(80rem 50rem at 50% 0,#000,transparent 78%)}
+.wrap{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:0 18px}
+/* 15 Okt — tombol kembali di halaman anak (whale) — PWA standalone tanpa tombol back */
+.wkembali{display:inline-flex;align-items:center;gap:6px;margin:10px 0 0;padding:6px 12px;
+  border:1px solid var(--line);border-radius:8px;background:rgba(13,20,17,.85);
+  color:var(--ac);font-size:12px;letter-spacing:.05em}
+.wkembali:active{background:rgba(110,231,183,.08)}
+a{color:var(--ac);text-decoration:none}
+a:hover{color:#9CF2CE}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px;border-radius:4px}
+
+/* ── top bar ── */
+.bar{position:sticky;top:0;z-index:20;background:rgba(7,11,9,.9);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line)}
+.bar-in{max-width:1240px;margin:0 auto;padding:11px 18px;display:flex;align-items:center;
+  gap:18px;flex-wrap:wrap}
+.logo{display:inline-flex;align-items:center;gap:9px;white-space:nowrap;user-select:none}
+.mark{width:23px;height:23px;flex:none;color:var(--ac);overflow:visible;
+  filter:drop-shadow(0 0 5px rgba(110,231,183,.28))}
+.mark .cur{animation:blink 1.15s steps(1,end) infinite}
+@keyframes blink{0%,55%{opacity:1}56%,100%{opacity:.12}}
+.wm{font-size:13.5px;letter-spacing:.012em;color:var(--fg-2);font-weight:500}
+.wm b{color:var(--fg);font-weight:700;letter-spacing:-.01em}
+@media(prefers-reduced-motion:reduce){.mark .cur{animation:none}}
+.pill{display:inline-flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--fg-2);border:1px solid var(--line-2);
+  border-radius:999px;padding:4px 10px;white-space:nowrap}
+.dot{width:6px;height:6px;border-radius:999px;background:var(--ac);flex:none;
+  animation:p 2.6s cubic-bezier(.4,0,.6,1) infinite}
+.dot.stale{background:var(--gold);animation:none}
+@keyframes p{0%{box-shadow:0 0 0 0 rgba(110,231,183,.45)}70%{box-shadow:0 0 0 7px rgba(110,231,183,0)}100%{box-shadow:0 0 0 0 rgba(110,231,183,0)}}
+.bar .sp{margin-left:auto}
+.kv{font-size:11px;color:var(--fg-3);white-space:nowrap}
+.kv b{color:var(--fg-2);font-weight:500}
+
+/* 15 Okt — aura ekstrem gauge:
+   ALTSEASON: api lebih terang (brightness/saturate naik) + aura membesar.
+   CRASH: api merah berdarah (merah pekat, denyut lebih cepat) + aura
+   terbakar besar. Warna dasar tetap dari GC[st] via JS; kelas ini
+   memperkuat cahaya & ukurannya saja. CATATAN 15 Okt: durasi denyut api
+   di-skalakan lewat JS di gaugeLivePaint (app.js) — durasi inline per api
+   menang atas atur CSS apa pun, jadi override animation-duration di sini
+   tidak berfungsi dan dihapus. */
+.gwrap.st-alt .glow{opacity:.75;filter:blur(22px) saturate(1.7);
+  transform:translate(-50%,-50%) scale(1.4)}
+#g-fl.st-alt{filter:blur(2.2px) saturate(1.8) brightness(1.55)}
+.gwrap.st-crash .glow{opacity:.88;filter:blur(15px) saturate(2.6);
+  transform:translate(-50%,-50%) scale(1.55)}
+#g-fl.st-crash{filter:blur(2.6px) saturate(3.2) brightness(1.2)}
+@media(prefers-reduced-motion:reduce){
+  .gwrap.st-alt .glow,.gwrap.st-crash .glow{opacity:.5;transform:translate(-50%,-50%)}}
+/* arah altcoin: spidometer + aura api */
+.dir{display:grid;grid-template-columns:minmax(280px,340px) 1fr;gap:16px;
+  background:var(--s1);border:1px solid var(--line);border-radius:var(--r);
+  padding:18px 20px;margin:18px 0 0}
+@media(max-width:820px){.dir{grid-template-columns:1fr}}
+.gwrap{position:relative;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;min-height:206px}
+/* Aura: cahaya lembut + lidah api. Opasitas sengaja RENDAH - ini penanda
+   kondisi, bukan hiasan yang merebut perhatian dari angkanya. */
+.glow{position:absolute;left:50%;top:54%;width:280px;height:280px;
+  transform:translate(-50%,-50%);pointer-events:none;filter:blur(28px);
+  opacity:.32;transition:background .5s ease}
+.gauge{position:relative;width:100%;max-width:300px;height:auto;display:block}
+.gauge .arcbg{fill:none;stroke:var(--line-2);stroke-width:2.4;stroke-linecap:round}
+.gauge .tick{stroke:var(--line-2);stroke-width:1.6;stroke-linecap:round}
+.gauge .tick.mid{stroke:var(--fg-3);stroke-width:2}
+/* ⚠️ Kunci terakhir supaya terbaca API, bukan daun: tepi lidahnya harus
+   LEMBUT dan saling tumpang tindih. Tanpa blur, tiap lidah adalah bentuk
+   berbatas tegas dan mata membacanya sebagai objek terpisah. */
+#g-fl{filter:blur(2.2px)}
+.fl{transform-box:fill-box;transform-origin:bottom center;
+  animation:fl 1.7s ease-in-out infinite;will-change:transform,opacity}
+@keyframes fl{
+  0%,100%{transform:scaleY(.7) scaleX(1.06)}
+  38%{transform:scaleY(1.42) scaleX(.86)}
+  61%{transform:scaleY(.92) scaleX(1.02)}
+  80%{transform:scaleY(1.18) scaleX(.94)}
+}
+.ndl{transition:transform .9s cubic-bezier(.16,1,.3,1)}
+.gl{display:flex;justify-content:space-between;width:100%;max-width:288px;
+  margin-top:-8px;font-size:10px;letter-spacing:.12em;color:var(--fg-3)}
+.gbias{margin-top:13px;font-size:20px;font-weight:700;letter-spacing:.1em;
+  transition:color .5s ease}
+.gname{font-size:10.5px;letter-spacing:.1em;color:var(--fg-3);margin-top:3px}
+
+/* 16 Okt — tombol preview gauge ◀▶ (untuk menilai gaya aura ALTSEASON/CRASH
+   tanpa menunggu kondisinya terjadi di pasar). Efek dianimasinya hanya di
+   .gwrap; label tengah (gplab) menunjukkan status yang sedang dipرتinjau. */
+.gpv{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:9px;user-select:none}
+.gpb{font-family:var(--mono,monospace);font-size:11px;line-height:1;padding:4px 10px;
+  border:1px solid var(--line-2);background:transparent;color:var(--fg-2);
+  border-radius:999px;cursor:pointer;transition:border-color .2s,color .2s}
+.gpb:hover{border-color:var(--ac);color:var(--fg)}
+.gpb:active{transform:scale(.94)}
+.gplab{font-size:10px;letter-spacing:.14em;color:var(--fg-2);text-transform:uppercase;min-width:64px;text-align:center}
+.gwrap.pv-on .gplab{color:var(--gold);font-weight:700}
+.dmeta{display:flex;flex-direction:column;justify-content:center;gap:9px;min-width:0}
+.dr{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:baseline;font-size:12px}
+.dr .l{color:var(--fg-3);font-size:11px;letter-spacing:.05em;text-transform:uppercase}
+.dr .d{border-bottom:1px dotted var(--line-2);transform:translateY(-3px)}
+.dr .v{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.dnote{margin-top:6px;padding-top:9px;border-top:1px solid var(--line);
+  font-size:10.5px;color:var(--fg-3);line-height:1.55}
+@media(prefers-reduced-motion:reduce){.fl{animation:none;opacity:.4}.ndl{transition:none}}
+
+/* ── watchlist accuracy + tools sinyal (17 Sep) ── */
+/* 7 Okt: 4 engine → 4 kel sejajar satu baris (sebelumnya 3 dan yang ke-4
+   jatuh sendirian ke baris bawah_sendiri). Semput → 2×2 dulu, baru 1 kolom. */
+.ak-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0 6px}
+@media(max-width:1100px){.ak-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.ak-grid{grid-template-columns:1fr}}
+.s-tools{display:flex;gap:8px;margin:0 0 10px;flex-wrap:wrap}
+.s-tools input,.s-tools select{background:var(--s1);border:1px solid var(--line-2);color:var(--fg);
+  border-radius:6px;padding:6px 10px;font-family:var(--mono);font-size:12px}
+.s-tools input{flex:1;min-width:150px}
+.s-tools input::placeholder{color:var(--fg-3)}
+@media(max-width:600px){.kv.btc{display:none}}
+
+/* ── channel strip ── */
+/* 7 Okt — 3→4 kolom: strip kini 4 kanal (HARVEST · BRICK · SWING · WHALE);
+   dengan repeat(3,1fr) kartu ke-4 (WHALE) jatuh sendirian ke baris kedua dan
+   baris winrate-nya tak sejajar dgn kartu lain. Breakpoint ikut pola .ak-grid. */
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0 26px}
+@media(max-width:1100px){.strip{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.strip{grid-template-columns:1fr}}
+.ch{background:var(--s1);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.ch-h{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.ch-n{font-weight:600;color:var(--fg);letter-spacing:.01em}
+.ch-tf{font-size:11px;color:var(--fg-3)}
+.tag{margin-left:auto;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  padding:2px 7px;border-radius:999px;border:1px solid transparent;white-space:nowrap}
+.tag.live{background:var(--ac-w);color:var(--ac);border-color:rgba(110,231,183,.22)}
+.tag.test{background:var(--gold-w);color:var(--gold);border-color:rgba(216,200,154,.26)}
+.rows{display:grid;gap:7px}
+.row{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:baseline;font-size:12px}
+.row .l{color:var(--fg-3);font-size:11px;letter-spacing:.05em;text-transform:uppercase}
+.row .d{border-bottom:1px dotted var(--line-2);transform:translateY(-3px)}
+.row .v{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.v.pos{color:var(--up)} .v.neg{color:var(--dn)} .v.mut{color:var(--fg-3)}
+.ch-sep{margin:11px 0 9px;border-top:1px solid var(--line);padding-top:9px}
+.ch-sep-l{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3);margin-bottom:8px}
+
+/* ── section ── */
+section{margin:0 0 30px}
+.sec-h{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+h2{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--fg);margin:0}
+h2 i{color:var(--ac);font-style:normal}
+.hint{font-size:11px;color:var(--fg-3)}
+.tabs{display:flex;gap:5px;margin-left:auto;flex-wrap:wrap}
+.tab{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  background:transparent;color:var(--fg-2);border:1px solid var(--line-2);border-radius:6px;
+  padding:6px 11px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.tab:hover{border-color:var(--ac);color:var(--fg)}
+.tab[aria-selected="true"]{background:var(--ac);color:#04100B;border-color:var(--ac);font-weight:600}
+.tab:active{transform:scale(.98)}
+
+/* ⚠️ Panel ber-scroll SENDIRI, bukan mengalir di halaman. Selain lebih
+   terminal, ini memperbaiki bug nyata: `th` sticky yang menempel pada
+   viewport akan MENUTUPI baris tabel saat tabelnya cuma berisi 1 baris
+   (terlihat di kanal 1H: header tampil, barisnya hilang). Di dalam
+   kotak ber-scroll, sticky menempel pada kotaknya, bukan halaman. */
+.tw{overflow:auto;max-height:60vh;border:1px solid var(--line);
+  border-radius:var(--r);background:var(--s1)}
+table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums;min-width:820px}
+th{text-align:left;padding:9px 12px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--fg-3);font-weight:500;border-bottom:1px solid var(--line);white-space:nowrap;
+  position:sticky;top:0;background:var(--s1);z-index:2}
+td{padding:8px 12px;border-bottom:1px solid var(--line);color:var(--fg-2);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tbody tr{transition:background .12s}
+tbody tr:hover{background:var(--s2)}
+td.sym{color:var(--fg);font-weight:600;letter-spacing:.01em}
+td.n{text-align:right}
+.side{font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:4px;font-weight:600}
+.side.long{background:var(--up-w);color:var(--up)}
+.side.short{background:var(--dn-w);color:var(--dn)}
+.st{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3)}
+.st.open{color:var(--gold)}
+.tv{display:inline-flex;align-items:center;justify-content:center;width:27px;height:25px;
+  border:1px solid var(--line-2);border-radius:5px;color:var(--fg-2);
+  transition:border-color .15s,color .15s,background .15s}
+.tv:hover{border-color:var(--ac);color:var(--ac);background:var(--ac-w)}
+.tv svg{width:13px;height:13px;display:block}
+.empty{padding:30px 16px;text-align:center;color:var(--fg-3);font-size:12px}
+
+/* ── charts ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--s1);border:1px solid var(--line);border-radius:var(--r);padding:16px;position:relative}
+.card-h{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.card-h h3{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--fg-2);margin:0}
+.lg{display:flex;gap:12px;margin-left:auto;flex-wrap:wrap}
+.lg span{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:var(--fg-3)}
+.lg i{width:12px;height:2px;border-radius:2px;display:inline-block}
+svg.ch{width:100%;height:190px;display:block;overflow:visible}
+svg.ch text{font-family:var(--mono);font-size:9px;fill:var(--fg-3)}
+svg.ch .g{stroke:var(--line);stroke-width:1}
+svg.ch .z{stroke:var(--line-2);stroke-width:1;stroke-dasharray:3 4}
+.cap{margin:11px 0 0;font-size:10.5px;color:var(--fg-3);line-height:1.5}
+
+/* ── bubbles: gelembung FISIK koin hasil deteksi engine reclaim ──
+   Terinspirasi cryptobubbles/bubblescrypto: gelembung melayang, bisa
+   digeser (tekan-tahan), bertumbukan dgn sesamanya, dan selalu kembali
+   melayang. Isi gelembung = perubahan harga 24 jam dari Binance (bukan
+   hasil R). Warna: hijau naik, merah turun, kuning = koin engine yang
+   tidak ditemukan di ticker 24 jam. Aura api = status koin di engine. */
+.bb-stage{position:relative;background:var(--s1);border:1px solid var(--line);
+  border-radius:var(--r);padding:16px;overflow:hidden}
+.bb-bar{display:flex;align-items:center;margin-bottom:12px}
+.bb-legend{margin-left:auto;display:flex;gap:12px;flex-wrap:wrap}
+.bb-legend span{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:var(--fg-3)}
+.bb-legend i{width:10px;height:10px;border-radius:999px;display:inline-block}
+.bb-plot{position:relative;height:480px;overflow:hidden;touch-action:none;
+  cursor:grab}
+.bb-plot.dragging{cursor:grabbing}
+@media(max-width:700px){.bb-plot{height:380px}}
+.bb{position:absolute;left:0;top:0;border-radius:999px;cursor:grab;
+  user-select:none;-webkit-user-select:none;touch-action:none;text-align:center;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1px;font-variant-numeric:tabular-nums;line-height:1.12;
+  will-change:transform}
+.bb.drag{cursor:grabbing;z-index:30}
+.bb b{font-weight:600;letter-spacing:.02em;white-space:nowrap;overflow:hidden;
+  max-width:92%;pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,.45)}
+.bb i{font-style:normal;font-weight:700;pointer-events:none;
+  text-shadow:0 1px 2px rgba(0,0,0,.45)}
+/* aura api: koin yang sedang ADA di catatan engine hari ini */
+.bb .aura{position:absolute;inset:-3px;border-radius:999px;pointer-events:none;
+  opacity:.5;filter:blur(3px);z-index:-1;
+  animation:bbflick 1.6s ease-in-out infinite alternate}
+@keyframes bbflick{from{opacity:.34;transform:scale(.985)}
+  to{opacity:.62;transform:scale(1.025)}}
+@media(prefers-reduced-motion:reduce){.bb .aura{animation:none;opacity:.4}}
+/* 15 Okt — tag engine di dalam bubble + animasi bubble baru (pop + ring ping) */
+.bb em.bb-tag{font-style:normal;font-weight:700;pointer-events:none;
+  font-size:7.5px;letter-spacing:.08em;opacity:.85;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+/* ⚠ .bb diposisikan via inline transform (fisika) — animasi masuk HARUS
+   tanpa transform, cukup fade + filter, supaya tak menimpa translate */
+.bb.baru{animation:bbpop .55s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes bbpop{from{opacity:0;filter:brightness(1.8)}
+  60%{opacity:1;filter:brightness(1.25)}to{opacity:1;filter:none}}
+.bb.baru::after{content:"";position:absolute;inset:-4px;border-radius:999px;
+  pointer-events:none;border:2px solid rgba(255,255,255,.75);
+  animation:bbping 1.5s ease-out 3}
+@keyframes bbping{from{transform:scale(.9);opacity:.9}
+  to{transform:scale(1.75);opacity:0}}
+@media(prefers-reduced-motion:reduce){.bb.baru,.bb.baru::after{animation:none}}
+.bb-tip{position:absolute;z-index:40;pointer-events:none;opacity:0;transition:opacity .15s;
+  background:var(--s3);border:1px solid var(--line-2);border-radius:6px;
+  padding:10px 12px;font-size:11px;min-width:200px;max-width:250px;color:var(--fg-2);
+  box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.bb-tip.on{opacity:1}
+.bb-tip .hd{font-weight:700;color:var(--fg);margin-bottom:7px;letter-spacing:.02em}
+.bb-tip .t{display:grid;grid-template-columns:auto 1fr auto;gap:6px;font-size:11px}
+.bb-tip .t .l{color:var(--fg-3);font-size:10px;letter-spacing:.05em;text-transform:uppercase}
+.bb-tip .t .d{border-bottom:1px dotted var(--line-2);transform:translateY(-3px)}
+.bb-tip .t .v{font-weight:600;white-space:nowrap;text-align:right}
+
+footer{margin:34px 0 40px;padding-top:16px;border-top:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;
+  font-size:11px;color:var(--fg-3)}
+@media(max-width:560px){
+  body{font-size:12px}
+  .bar-in{gap:10px;padding:9px 14px}
+  .tw{max-height:70vh}
+}
+
+/* legend bubbles (17 Sep: pindah dari style= inline agar lolos CSP) */
+.lg-up{background:rgba(110,231,183,.2);border:1px solid #6EE7B7}
+.lg-dn{background:rgba(232,135,124,.2);border:1px solid #E8877C}
+.lg-id{background:rgba(216,200,154,.2);border:1px solid #D8C89A}
+
+/* ── picked by you (18 Sep) ── */
+.pickb{color:var(--gold);text-shadow:0 0 8px rgba(216,200,154,.45)}
+td.dim{color:var(--line-2)}
+#kamu .rows .row .v{font-weight:600}
+
+/* picked v2: flip badge + daftar catatan */
+.pickb{color:var(--gold);text-shadow:0 0 8px rgba(216,200,154,.45);white-space:nowrap}
+.pick-notes{grid-column:1/-1;background:var(--s1);border:1px solid var(--line);
+  border-radius:8px;padding:12px 14px;margin-top:2px}
+.pick-notes .pn-h{font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--fg-3);margin-bottom:8px}
+.pick-notes .pn-r{display:flex;gap:10px;align-items:baseline;padding:3px 0;
+  border-bottom:1px dotted var(--line-2);font-size:11.5px}
+.pick-notes .pn-r:last-child{border-bottom:0}
+.pick-notes .pn-tf{color:var(--fg-3);font-size:10px;min-width:24px}
+.pick-notes .pn-side{font-size:10px;font-weight:700;padding:0 6px;border-radius:3px}
+.pick-notes .pn-side.long{color:var(--up);background:var(--up-w)}
+.pick-notes .pn-side.short{color:var(--dn);background:var(--dn-w)}
+.pick-notes .pn-note{color:var(--fg-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── notifikasi toast (18 Sep) ──
+   Kartu kanan-atas: klik badan = buka TradingView koin itu, × = tutup saja.
+   Warna aksen mengikuti tema terminal: emas = watchlist, hijau = sinyal. */
+#toasts{position:fixed;top:54px;right:14px;z-index:50;display:flex;
+  flex-direction:column;gap:8px;width:288px;pointer-events:none}
+.toast{pointer-events:auto;display:flex;align-items:stretch;cursor:pointer;
+  background:linear-gradient(180deg,var(--s2),var(--s1));
+  border:1px solid var(--line-2);border-left:3px solid var(--gold);
+  border-radius:8px;box-shadow:0 8px 26px rgba(0,0,0,.5);
+  opacity:0;transform:translateX(14px);
+  transition:opacity .28s ease,transform .28s ease}
+.toast.t-sig{border-left-color:var(--ac)}
+.toast.in{opacity:1;transform:translateX(0)}
+.toast.out{opacity:0;transform:translateX(14px)}
+
+/* ═══════════ PANEL PEMILIH SUARA NOTIFIKASI (23 Sep) ═══════════ */
+.snd-ov{position:fixed;inset:0;z-index:4000;display:flex;align-items:center;justify-content:center;
+  background:rgba(4,8,6,.62);backdrop-filter:blur(3px);opacity:1;transition:opacity .18s ease}
+.snd-ov.out{opacity:0;pointer-events:none}
+.snd-box{width:min(400px,92vw);max-height:84vh;overflow-y:auto;padding:22px 24px 20px;
+  border:1px solid #22322A;border-radius:20px;background:#0D1411;
+  box-shadow:0 30px 90px rgba(0,0,0,.65),0 0 0 1px rgba(216,200,154,.06) inset;
+  animation:gboxIn .45s cubic-bezier(.2,.9,.3,1.15) both}
+.snd-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.snd-hd b{font-size:15px;letter-spacing:.04em}
+.snd-x{background:transparent;border:0;color:var(--fg-3);font-size:20px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:6px}
+.snd-x:hover{color:var(--fg);background:rgba(255,255,255,.06)}
+.snd-sub{margin:0 0 13px;font-size:11.5px;line-height:1.55;color:var(--fg-3)}
+.snd-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.snd-opt{background:#0A100D;border:1px solid #2A3A31;color:#C9D8CF;border-radius:10px;
+  padding:9px 8px;font:inherit;font-size:11.5px;cursor:pointer;text-align:left;
+  transition:border-color .12s,background .12s,color .12s}
+.snd-opt:hover{border-color:rgba(110,231,183,.45);color:#EAF4EE}
+.snd-opt.on{background:var(--up-w);border-color:var(--up);color:var(--up);font-weight:700;
+  box-shadow:0 0 10px rgba(110,231,183,.14)}
+.snd-vrow{display:flex;align-items:center;gap:11px;margin-top:15px;padding-top:13px;
+  border-top:1px solid var(--line)}
+.snd-vlab{font-size:11px;letter-spacing:.10em;text-transform:uppercase;color:var(--fg-3);white-space:nowrap}
+.snd-vol{flex:1;accent-color:var(--up);cursor:pointer}
+.snd-vval{font:11.5px/1 var(--mono);color:var(--fg-2);min-width:40px;text-align:right}
+@media (max-width:430px){.snd-grid{grid-template-columns:1fr 1fr;gap:6px}.snd-opt{padding:8px 6px;font-size:11px}}
+.toast:hover{border-color:var(--ac-2)}
+.tbody{flex:1;padding:9px 4px 9px 12px;min-width:0}
+.tkind{display:block;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--fg-3);margin-bottom:2px}
+.t-sig .tkind{color:var(--ac)}
+.trow{display:flex;align-items:baseline;gap:8px}
+.trow b{font-size:13.5px;color:var(--fg);letter-spacing:.02em}
+.tdir{font-size:10px;font-weight:700;padding:0 6px;border-radius:3px}
+.tdir.long{color:var(--up);background:var(--up-w)}
+.tdir.short{color:var(--dn);background:var(--dn-w)}
+.ttf{font-size:10px;color:var(--fg-3)}
+.tsub{display:block;font-size:10px;color:var(--fg-3);margin-top:2px}
+.tx{flex:none;width:30px;border:0;border-left:1px solid var(--line);
+  background:transparent;color:var(--fg-3);font-size:17px;cursor:pointer;
+  font-family:var(--mono)}
+.tx:hover{color:var(--fg);background:var(--s3)}
+
+/* tombol suara di bar atas — satu baris dengan pill LIVE */
+.mute{border:1px solid var(--line-2);background:transparent;border-radius:999px;
+  width:30px;height:24px;cursor:pointer;font-size:12px;line-height:1;
+  display:inline-flex;align-items:center;justify-content:center;padding:0}
+.mute:hover{border-color:var(--ac-2);background:var(--ac-w)}
+
+/* ── v6: highlight pencarian, sorot bubble, filter side, ukuran %24j ── */
+.hlmark{background:var(--gold-w);color:var(--gold);border-radius:3px;padding:0 1px}
+.s-tools select{min-width:110px}
+#b-q{background:var(--s1);border:1px solid var(--line-2);color:var(--fg);
+  font:11px/1 var(--mono);padding:6px 10px;border-radius:var(--r);width:190px;
+  margin-left:14px}
+#b-q::placeholder{color:var(--fg-3)}
+#b-q:focus{outline:none;border-color:var(--ac)}
+.bb{transition:opacity .25s, box-shadow .25s}
+.bb.dim{opacity:.18;filter:saturate(.3)}
+.bb.hit{z-index:25}
+.bb.hit::after{content:"";position:absolute;inset:-5px;border-radius:999px;
+  border:2px solid var(--gold);pointer-events:none;
+  animation:bbpulse 1.2s ease-in-out infinite}
+@keyframes bbpulse{0%,100%{box-shadow:0 0 0 0 rgba(216,200,154,.45)}
+  50%{box-shadow:0 0 14px 3px rgba(216,200,154,.30)}}
+
+/* v8: kursor jelas pada bubble yang disorot */
+.bb.hit{cursor:pointer}
+
+/* ── v9: chip koin teraktif di atas kanvas ── */
+.b-chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}
+.b-chips .chip{background:var(--s2);border:1px solid var(--line-2);color:var(--fg-2);
+  font:600 10px/1 var(--mono);padding:5px 9px;border-radius:999px;cursor:pointer;
+  transition:border-color .15s, background .15s}
+.b-chips .chip:hover{border-color:var(--gold);background:var(--gold-w)}
+.b-chips .chip-empty{font-size:10px;color:var(--fg-3);font-style:italic}
+
+/* ── v12: badge picked di chip + legenda 6 tier ── */
+.b-chips .chip.pick{border-color:var(--gold);background:var(--gold-w);
+  box-shadow:0 0 8px rgba(216,200,154,.25)}
+.b-chips .chip.pick::before{content:"★ ";color:var(--gold)}
+
+
+/* ── v18: Live Picks Admin (ambil + koreksi + resolve) ─────────── */
+.apbtn{font:inherit;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  background:transparent;color:var(--ac);border:1px solid var(--ac);border-radius:4px;
+  padding:2px 8px;cursor:pointer}
+.apbtn:hover{background:var(--ac);color:#0a0f0d}
+.apbadge{font:inherit;font-size:10.5px;font-weight:700;letter-spacing:.04em;
+  border:1px solid transparent;border-radius:4px;padding:2px 7px;cursor:default;
+  background:rgba(216,200,154,.10);color:var(--fg-2)}
+button.apbadge{cursor:pointer}
+.apbadge.apwin{background:rgba(110,231,183,.13);color:var(--up);border-color:rgba(110,231,183,.45)}
+.apbadge.aploss{background:rgba(232,135,124,.13);color:var(--dn);border-color:rgba(232,135,124,.45)}
+.apbadge.apopen{background:rgba(216,200,154,.14);color:var(--fg-2);border-color:rgba(216,200,154,.4)}
+.adm-gear{margin-left:8px;background:transparent;border:1px solid transparent;color:var(--fg-3);
+  font-size:15px;cursor:pointer;border-radius:5px;padding:2px 7px;line-height:1}
+.adm-gear:hover{color:var(--ac);border-color:var(--ac)}
+.adm-modal{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(4,7,6,.72);display:none;
+  align-items:center;justify-content:center;z-index:90;padding:16px}
+.adm-modal.in{display:flex}
+/* 16 Okt (permintaan user): kotak live pick terlalu sempit — dinaikkan dari
+   430px → 620px supaya checklist alasan + chip timeframe muat dua kolom. */
+.adm-box{background:var(--s2,#101614);border:1px solid var(--line-2,#2a3532);border-radius:10px;
+  padding:18px;width:min(620px,96vw);max-height:88vh;overflow:auto;
+  box-shadow:0 18px 60px rgba(0,0,0,.55)}
+.adm-h{display:flex;align-items:baseline;gap:8px;margin-bottom:12px}
+.adm-h b{font-size:14px;letter-spacing:.02em}
+.adm-sub{color:var(--fg-3);font-size:11px;flex:1}
+.adm-x{margin-left:auto;background:none;border:none;color:var(--fg-3);font-size:17px;cursor:pointer}
+.adm-x:hover{color:var(--dn)}
+.adm-desc{color:var(--fg-3);font-size:11.5px;line-height:1.55;margin-bottom:12px}
+.adm-in{width:100%;box-sizing:border-box;margin:0 0 9px;background:var(--s1,#0b100e);
+  border:1px solid var(--line-2,#2a3532);color:var(--fg);border-radius:6px;padding:8px 10px;
+  font:inherit;font-size:12.5px}
+.adm-in:focus{outline:none;border-color:var(--ac)}
+.adm-row{display:flex;gap:8px;margin-top:2px}
+.adm-save{flex:1;background:var(--ac);color:#0a0f0d;border:none;border-radius:6px;
+  padding:8px 10px;font:inherit;font-weight:700;cursor:pointer}
+.adm-save:hover{filter:brightness(1.1)}
+/* 27 Sep — status gagal simpan + tombol coba lagi */
+.sv-msg{flex:1}
+.sv-msg.warn{color:var(--gold,#D8C89A)}
+.sv-msg.neg{color:#ff8a80}
+.sv-retry{background:transparent;border:1px solid var(--ac,#6EE7B7);color:var(--ac,#6EE7B7);
+  border-radius:6px;padding:4px 10px;font:inherit;font-size:11.5px;cursor:pointer}
+.sv-retry:hover{background:rgba(110,231,183,.08)}
+.adm-cancel,.adm-del{background:transparent;border:1px solid var(--line-2,#2a3532);
+  color:var(--fg-2);border-radius:6px;padding:8px 12px;font:inherit;cursor:pointer}
+.adm-del{color:var(--dn);border-color:rgba(232,135,124,.4)}
+.adm-del:hover{background:rgba(232,135,124,.12)}
+.adm-cancel:hover{border-color:var(--fg-2)}
+.adm-status{margin-top:10px;font-size:11.5px;color:var(--fg-3);min-height:15px}
+
+/* 11 Okt — form live pick: status, inducement, upload gambar (maks 4) */
+.pimg-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.pimg-grid .pimg-it{position:relative;width:118px;height:78px}
+.pimg-grid .pimg-it img{width:100%;height:100%;object-fit:cover;border-radius:8px;
+  border:1px solid var(--line-2,#2a3532);cursor:zoom-in;background:#0b100e}
+.pimg-grid .pimg-it .pimg-x{position:absolute;top:-7px;right:-7px;width:20px;height:20px;
+  border-radius:50%;background:#301418;border:1px solid rgba(232,135,124,.5);
+  color:#ff8a80;font-size:12px;line-height:1;cursor:pointer}
+.pimg-grid.view .pimg-it{cursor:zoom-in}
+.pimg-in{padding:6px 8px;font-size:11px}
+.lv-sub{margin:14px 0 2px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px}
+
+/* ── v20: koin pilihan admin di bubbles — bintang + garis tepi emas ── */
+.bb .bbstar{position:absolute;top:-5px;right:3px;font-size:14px;line-height:1;font-style:normal;
+  color:#ffd54f;text-shadow:0 0 6px rgba(255,213,84,.9),0 1px 2px rgba(0,0,0,.6);
+  pointer-events:none;z-index:3;animation:bbstarPulse 2s ease-in-out infinite}
+@keyframes bbstarPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+
+/* ── v23: label koreksi admin DI DALAM bubble (terlihat semua pengunjung) ──
+   "short" merah / "long" hijau — arah yang admin ambil dari engine */
+.bb .bbfix{font-style:normal;text-decoration:none;font-weight:800;text-transform:uppercase;
+  letter-spacing:.14em;font-size:.78em;line-height:1;pointer-events:none;
+  padding:1.5px 7px;border-radius:999px;text-shadow:none}
+.bb .bbfix.long{color:#39e08c;background:rgba(57,224,140,.13);
+  box-shadow:inset 0 0 0 1px rgba(57,224,140,.45)}
+.bb .bbfix.short{color:#ff7a70;background:rgba(255,122,112,.13);
+  box-shadow:inset 0 0 0 1px rgba(255,122,112,.45)}
+@media(max-width:700px){.bb .bbfix{padding:1px 5px;letter-spacing:.08em}}
+
+/* 11 Okt — label admin + status DI DALAM bubble (Qkuk/Gerry · Menunggu/
+   Ambil Posisi/Take Profit); pick oleh Gerry dgn tone cyan, Qkuk netral */
+.bb .bbadmin{position:absolute;left:50%;bottom:14%;transform:translateX(-50%);
+  font:600 .62em/1.25 var(--mono,monospace);letter-spacing:.04em;white-space:nowrap;
+  color:#ffe9a8;background:rgba(10,14,12,.55);border:1px solid rgba(255,213,84,.35);
+  border-radius:6px;padding:1px 6px;pointer-events:none;max-width:92%;overflow:hidden;
+  text-overflow:ellipsis}
+.bb.picked.gerry-side .bbadmin{color:#a8ecff;border-color:rgba(120,220,255,.4)}
+
+/* ── v21: riwayat koreksi admin + pembanding backtest ── */
+.row.bt-h{margin-top:7px;padding-top:6px;border-top:1px dashed var(--line)}
+.row.bt-h .l{color:var(--fg-3);font-size:10px;letter-spacing:.08em}
+.v.warn{color:var(--gold)}
+.plog-wrap{margin:14px 0 4px}
+.plog-scroll{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.015)}
+.plog-t{width:100%;border-collapse:collapse;font-size:11.5px}
+.plog-t th{position:sticky;top:0;background:var(--bg);text-align:left;padding:8px 10px;color:var(--fg-3);font-weight:600;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line)}
+.plog-t td{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.045);white-space:nowrap}
+.plog-t tr:last-child td{border-bottom:none}
+.plog-empty{padding:12px;color:var(--fg-3);font-size:12px}
+
+/* 11 Okt — live score klasemen (PALING ATAS) + kartu admin */
+.ls-card{margin:0 0 16px}
+.ls-grid{display:flex;gap:12px;flex-wrap:wrap;padding:0 2px 6px}
+.ls-grid .ls-kartu{flex:1 1 240px;min-width:220px}
+.ls-grid .ls-kartu .ch-n{font-size:13px;letter-spacing:.08em}
+.ls-kartu.gerry{border-color:rgba(120,220,255,.22)}
+.ls-kartu.gerry .ch-n{color:#a8ecff}
+.ls-kartu.qkuk .ch-n{color:#D8C89A}
+
+/* 11 Okt — section Riwayat koreksi admin di bawah Signals */
+#kor-bx{margin-top:26px}
+#kor-bx .sec-h{margin-bottom:8px}
+.plog-t td.who-q{color:#D8C89A;font-weight:700}
+.plog-t td.who-g{color:#a8ecff;font-weight:700}
+.plog-t tbody tr{cursor:default}
+.plog-t tbody tr[data-klik="1"]{cursor:pointer}
+.plog-t tbody tr[data-klik="1"]:hover td{background:rgba(110,231,183,.05)}
+
+/* 11 Okt — kotak analisis: tabel teknik-vs-teknik Qkuk vs Gerry */
+.an-duel{margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:rgba(255,255,255,.015)}
+.an-duel-h{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3);margin-bottom:8px}
+.an-t{width:100%;border-collapse:collapse;font-size:12px}
+.an-t th{text-align:left;padding:5px 8px;color:var(--fg-3);font-weight:600;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line)}
+.an-t td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.045);white-space:nowrap}
+.an-c.pos{color:var(--up)}
+.an-c.neg{color:#ff8a80}
+.an-v{font-weight:800;letter-spacing:.05em}
+.an-v.qq{color:#D8C89A}
+.an-v.gg{color:#a8ecff}
+.an-v.mut{color:var(--fg-3);font-weight:400}
+
+/* 11 Okt — filter admin/periode di kartu kurva live */
+.eq-filt{display:inline-flex;gap:5px;flex-wrap:wrap}
+
+/* 12 Okt — tombol cepat status di kolom live (signals/watchlist) */
+.qst-row{display:inline-flex;gap:3px;margin-left:6px;vertical-align:middle}
+.qst-chip{border:1px solid var(--line-2,#2a3532);background:transparent;color:var(--fg-2);
+  font:600 10px/1 var(--mono,monospace);letter-spacing:.04em;border-radius:5px;
+  padding:2px 6px;cursor:pointer;white-space:nowrap}
+.qst-chip:hover{border-color:var(--ac,#6EE7B7);color:var(--ac,#6EE7B7)}
+.qst-chip.qst-entry:hover{border-color:#7CE38B;color:#7CE38B}
+.qst-chip.qst-tp:hover{border-color:#FFD54F;color:#FFD54F}
+.qst-chip.qst-fix:hover{border-color:#FF8A80;color:#FF8A80}
+
+/* 12 Okt — bubble konflik dua admin */
+.bb .bbadmin.duel,.bb.duel .bbadmin{border-color:rgba(255,138,128,.5);color:#ffb4ab}
+
+/* 12 Okt — baris arsip bulan lalu (live score) */
+.ls-lama{display:flex;flex-wrap:wrap;gap:4px 14px;padding:6px 12px 0;color:var(--fg-2);
+  font-size:11.5px;border-top:1px dashed var(--line);margin-top:8px}
+.ls-lama .ls-lama-judul{color:var(--fg-3);letter-spacing:.06em;text-transform:uppercase;font-size:10px}
+.ls-lama b{color:var(--fg);font-weight:600}
+/* ── heat table jam terbaik (22 Sep) ── */
+/* ═══ HEAT TABLE — restyle 23 Sep: tema blockchain/terminal. Sel dibikin
+   like-pixel: sudut memotong (clip-path), teks glow tipis, kolom jam lampu
+   ticker, kanal aktif dgn rail emas, sel terpilih outline hijau + shadow. */
+.hh-t{width:100%;border-collapse:separate;border-spacing:3px;font-size:11px}
+.hh-t th{padding:7px 4px;color:var(--fg-3);font-weight:600;font-size:10px;letter-spacing:.09em;text-transform:uppercase;text-align:center;border-bottom:1px solid var(--line-2);background:linear-gradient(180deg,rgba(110,231,183,.04),transparent)}
+.hh-t th:first-child{text-align:left;padding-left:8px}
+.hh-t td.hh-jam{padding:4px 8px;color:var(--fg-2);font-variant-numeric:tabular-nums;white-space:nowrap;
+  border-left:2px solid var(--line);text-shadow:0 0 8px rgba(110,231,183,.12)}
+.hh-t tbody tr:hover td.hh-jam{color:var(--ac)}
+.hh-c{border-radius:8px;padding:5px 4px;text-align:center;min-width:86px;border:1px solid transparent}
+.hh-c.hh-none{background:rgba(255,255,255,.02);color:var(--fg-3)}
+.hh-c.hh-w0,.hh-c.hh-w1{background:var(--up-w);border-color:rgba(110,231,183,.16)}
+.hh-c.hh-w2{background:rgba(110,231,183,.24);border-color:rgba(110,231,183,.3)}
+.hh-c.hh-w3{background:rgba(110,231,183,.38);border-color:rgba(110,231,183,.5)}
+.hh-c.hh-w4{background:rgba(110,231,183,.55);border-color:rgba(110,231,183,.75)}
+.hh-c.hh-w5,.hh-c.hh-w6,.hh-c.hh-w7{background:rgba(110,231,183,.7);border-color:var(--up);box-shadow:0 0 14px rgba(110,231,183,.25)}
+.hh-c.hh-l0,.hh-c.hh-l1{background:var(--dn-w);border-color:rgba(232,135,124,.16)}
+.hh-c.hh-l2{background:rgba(232,135,124,.24);border-color:rgba(232,135,124,.3)}
+.hh-c.hh-l3{background:rgba(232,135,124,.38);border-color:rgba(232,135,124,.5)}
+.hh-c.hh-l4{background:rgba(232,135,124,.55);border-color:rgba(232,135,124,.75)}
+.hh-c.hh-l5,.hh-c.hh-l6,.hh-c.hh-l7{background:rgba(232,135,124,.7);border-color:var(--dn);box-shadow:0 0 14px rgba(232,135,124,.25)}
+.hh-c .hh-wr{display:block;font-weight:700;font-size:12.5px;font-variant-numeric:tabular-nums}
+.hh-c .hh-sub{display:block;font-size:9.5px;color:var(--fg-3);margin-top:1px}
+.hh-c .hh-star{position:absolute;margin-left:3px;color:#ffd54f;font-size:11px}
+.hh-c{position:relative;
+  clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);
+  border:1px solid var(--line);
+  transition:filter .12s,box-shadow .12s}
+.hh-c:hover{filter:brightness(1.22);
+  box-shadow:0 0 12px rgba(110,231,183,.14)}
+.hh-cap{border-top:1px solid var(--line);margin-top:6px}
+/* 23 Sep — toggle metode pewarnaan + baris aktif + sel terpilih + chip filter */
+.hh-toggle{display:flex;gap:6px;margin:2px 0 8px}
+.hh-tg{background:transparent;border:1px solid var(--line);color:var(--fg-3);border-radius:8px;padding:4px 12px;font:inherit;font-size:11px;cursor:pointer;letter-spacing:.03em}
+.hh-tg:hover{border-color:var(--up);color:var(--fg)}
+.hh-tg.on{background:var(--up-w);border-color:var(--up);color:var(--up);font-weight:600}
+.hh-t tbody tr.hh-active td{background:linear-gradient(90deg,rgba(255,213,79,.06),rgba(255,213,79,.015))}
+.hh-t tbody tr.hh-active td.hh-jam{color:var(--gold)}
+.hh-t tbody tr.hh-active td:first-child{box-shadow:inset 3px 0 0 rgba(255,213,79,.55)}
+.hh-t tbody tr.hh-sel td{outline:1px solid var(--up);outline-offset:-1px;
+  box-shadow:0 0 12px rgba(110,231,183,.18)}
+.hh-c:hover{filter:brightness(1.18)}
+
+/* ═══════════ WINRATE HARIAN Senin–Minggu (23 Sep) ═══════════ */
+.daywr-t td{color:var(--fg-2)}
+.daywr-t td.hh-jam{color:var(--fg);font-weight:600;letter-spacing:.04em}
+.daywr-t .daywr-bar{min-width:180px}
+.daywr-bx{position:relative;height:10px;border-radius:6px;background:#0A100D;
+  border:1px solid var(--line);overflow:hidden}
+.daywr-f{position:absolute;left:0;top:0;bottom:0;border-radius:6px 0 0 6px}
+.daywr-f.up{background:linear-gradient(90deg,rgba(110,231,183,.25),rgba(110,231,183,.75))}
+.daywr-f.dn{background:linear-gradient(90deg,rgba(255,82,82,.25),rgba(255,82,82,.75))}
+.daywr-mid{position:absolute;left:50%;top:-1px;bottom:-1px;width:0;
+  border-left:1px dashed rgba(216,200,154,.5)}
+.daywr-note{margin-top:8px;border:0;padding-top:2px;opacity:.8}
+.hh-fchip{margin-left:10px;background:var(--up-w);border:1px solid var(--up);color:var(--up);border-radius:999px;padding:3px 12px;font:inherit;font-size:11px;cursor:pointer;box-shadow:0 0 10px rgba(110,231,183,.14)}
+.hh-fchip:hover{background:rgba(110,231,183,.22)}
+.hr-wib{fill:var(--fg-3);letter-spacing:.14em;font-size:8.5px}
+.hr-x{stroke:var(--fg-2);stroke-width:1;stroke-dasharray:2 3;opacity:.55}
+svg.ch text.eq-end{font-size:9px;font-weight:700}
+.lg-dot{width:8px;height:8px;border-radius:2px;display:inline-block}
+svg.ch .hr-none-t{fill:var(--fg-3);font-size:10.5px}
+/* ══ HISTOGRAM DIVERGEN panel winrate per jam (25 Sep — gaya tab Whale v3) ══
+   batang tumbuh dari garis 50%: naik = menang (gradient kanal), turun = kalah
+   (merah) · antar segaran batang MELUNCUR ke tinggi baru (transition +
+   stagger kiri→kanan per jam) · batang ekstrem berdenyut oranye · glow ala
+   order-flow. MatchMedia di app.js mematikan animasi juga. */
+.hr-bar rect{transition:y .65s cubic-bezier(.22,.9,.28,1),height .65s cubic-bezier(.22,.9,.28,1),
+  filter .2s ease}
+.hr-bar.w rect{filter:drop-shadow(0 0 4px rgba(110,231,183,.35))}
+.hr-bar.l rect{filter:drop-shadow(0 0 4px rgba(232,135,124,.30))}
+.hr-bar rect:hover{filter:brightness(1.35)}
+.hr-bar.hot rect{animation:hrPulse 1.6s ease-in-out infinite}
+@keyframes hrPulse{0%,100%{filter:brightness(1)}
+  50%{filter:brightness(1.5) saturate(1.25) drop-shadow(0 0 7px rgba(238,180,76,.55))}}
+svg.ch .hr-lab{font-size:9px;letter-spacing:.16em;font-weight:700;opacity:.85;
+  paint-order:stroke;stroke:rgba(7,11,9,.85);stroke-width:2.5px;stroke-linejoin:round}
+svg.ch .hr-lab.up{fill:var(--up)}
+svg.ch .hr-lab.dn{fill:var(--dn)}
+@media (prefers-reduced-motion: reduce){
+  .hr-bar rect{transition:none}
+  .hr-bar.hot rect{animation:none}}
+.hr-tip{position:absolute;z-index:30;pointer-events:none;display:none;min-width:168px;
+  background:rgba(12,19,16,.97);border:1px solid var(--line-2);border-radius:10px;
+  padding:9px 12px;font-size:11px;box-shadow:0 12px 34px rgba(0,0,0,.55),0 0 0 1px rgba(110,231,183,.07) inset}
+.hr-tip b{display:block;font-size:10.5px;letter-spacing:.08em;color:var(--fg-2);margin-bottom:5px}
+.hr-tr{display:flex;align-items:center;gap:6px;padding:1.5px 0}
+.hr-tn{flex:1;color:var(--fg-2)}
+.hr-tv{font-weight:700;font-variant-numeric:tabular-nums}
+.hr-tm{color:var(--fg-3);font-size:10px;min-width:52px;text-align:right}
+.card{position:relative}
+
+/* ── v23: badge koreksi admin di kolom koreksi ── */
+.apbadge.corr{border-color:var(--gold);color:var(--gold);background:rgba(255,213,84,.07)}
+
+/* ── v24: baris watchlist/sinyal yang diambil admin — latar emas tipis ── */
+tbody tr.pickrow{background:rgba(255,213,79,.055)}
+tbody tr.pickrow td:first-child{box-shadow:inset 3px 0 0 rgba(255,213,79,.5)}
+tbody tr.pickrow:hover{background:rgba(255,213,79,.09)}
+
+/* ═══════════ GERBANG LOGIN PRIVAT (v25) ═══════════ */
+#gate{position:fixed;inset:0;z-index:4000;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 50% 30%, #0D1512 0%, var(--bg) 62%)}
+html.authed #gate{display:none}
+.gate-box{width:min(432px,92vw);padding:48px 44px 40px;border:1px solid #22322A;border-radius:20px;
+  background:#0D1411;box-shadow:0 30px 90px rgba(0,0,0,.65),0 0 0 1px rgba(216,200,154,.06) inset,0 1px 0 rgba(255,255,255,.045) inset;
+  text-align:center;animation:gboxIn .6s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes gboxIn{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}
+.gate-box.shake{animation:gshake .4s}
+@keyframes gshake{20%{transform:translateX(-9px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+.gate-logo{display:flex;justify-content:center;padding:4px 0 22px}
+.gate-logo .mark{width:36px;height:36px}
+.gate-logo .wm{font-size:21px}
+.gate-logo .wm b{font-weight:800}
+.gate-sub{margin:14px 0 20px;font-size:12.5px;color:#93A69B}
+.gate-form{display:flex;flex-direction:column;gap:13px}
+.gate-form input{width:100%;box-sizing:border-box;padding:14px 16px;border-radius:12px;border:1px solid #2A3A31;
+  background:#0A100D;color:#DCE8E1;font-size:15px;outline:none;transition:border-color .15s,box-shadow .15s}
+.gate-form input:focus{border-color:rgba(216,200,154,.55);box-shadow:0 0 0 3px rgba(216,200,154,.10)}
+#gate-btn{margin-top:7px;padding:15px;border-radius:12px;border:0;cursor:pointer;font-weight:800;letter-spacing:.22em;font-size:13.5px;
+  color:#07120C;background:linear-gradient(135deg,#8FF0C8,#3EBA8B);box-shadow:0 8px 24px rgba(110,231,183,.16);transition:filter .15s,transform .1s,box-shadow .15s}
+#gate-btn:hover{filter:brightness(1.08);box-shadow:0 10px 30px rgba(110,231,183,.26)}
+#gate-btn:active{transform:scale(.97)}
+.gate-err{min-height:18px;margin-top:13px;font-size:12.5px;color:var(--dn)}
+
+/* ── animasi transisi blockchain ── */
+.gate-chain{display:none;margin-top:6px}
+.gate-chain.run{display:block;animation:chainIn .4s both}
+@keyframes chainIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.glink{display:flex;align-items:center;justify-content:center;gap:0}
+.gnode{width:20px;height:22px;margin:0 7px;clip-path:polygon(25% 4%,75% 4%,98% 50%,75% 96%,25% 96%,2% 50%);
+  background:#18241E;opacity:.28;transform:scale(.7)}
+.glink i{width:16px;height:2px;background:#2A3A31;transform:scaleX(0);border-radius:2px}
+.gate-chain.run .gnode{animation:gnodeOn .55s cubic-bezier(.2,.9,.3,1.3) forwards}
+.gate-chain.run .gnode:nth-child(1){animation-delay:.15s}
+.gate-chain.run .gnode:nth-child(3){animation-delay:.50s}
+.gate-chain.run .gnode:nth-child(5){animation-delay:.85s}
+.gate-chain.run .gnode:nth-child(7){animation-delay:1.20s}
+.gate-chain.run .gnode:nth-child(9){animation-delay:1.55s}
+.gate-chain.run .glink i:nth-child(2){animation:glnkOn .3s .42s forwards}
+.gate-chain.run .glink i:nth-child(4){animation:glnkOn .3s .77s forwards}
+.gate-chain.run .glink i:nth-child(6){animation:glnkOn .3s 1.12s forwards}
+.gate-chain.run .glink i:nth-child(8){animation:glnkOn .3s 1.47s forwards}
+@keyframes gnodeOn{40%{transform:scale(1.22)}to{opacity:1;transform:scale(1);background:linear-gradient(160deg,#E4D5A6,#B69B5F);box-shadow:0 0 18px rgba(216,200,154,.5)}}
+@keyframes glnkOn{to{transform:scaleX(1);background:var(--gold);box-shadow:0 0 8px rgba(216,200,154,.45)}}
+.ghash{margin-top:16px;font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:#93A69B;letter-spacing:.05em;min-height:16px}
+.ggrant{margin-top:10px;font-size:12.5px;font-weight:700;letter-spacing:.14em;color:var(--up);opacity:0}
+.gate-chain.run .ggrant{animation:ggrantIn .45s 2.0s forwards}
+@keyframes ggrantIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#gate.bye{animation:gateBye .65s ease forwards}
+@keyframes gateBye{to{opacity:0;transform:scale(1.05);visibility:hidden}}
+/* 21 Sep — KRITIS: animasi transform di BODY menjadikan body containing
+   block bagi semua position:fixed (modal edit, toast, gerbang) — modal
+   edit ter-center terhadap SELURUH DOKUMEN (bisa 4000px+) dan jatuh di
+   bawah lipatan layar = tampak "blank" saat tombol ambil diklik.
+   Solusi: body hanya fade (opacity tidak membuat containing block),
+   efek naik translateY dipindah ke .wrap (tak punya keturunan fixed). */
+html.authed body{animation:qkFade .5s ease both}
+html.authed .wrap{animation:qkRise .55s ease both}
+@keyframes qkFade{from{opacity:0}to{opacity:1}}
+@keyframes qkRise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* v25b: kunci scroll di balik gerbang — konten tidak bisa digulir saat login tampil */
+html:not(.authed),html:not(.authed) body{overflow:hidden!important;height:100%!important}
+
+/* v26: tombol keluar di header — kembali ke gerbang login */
+.gate-out{color:var(--dn)!important}
+.gate-out:hover{color:#fff!important;border-color:var(--dn)!important}
+
+/* v27: subtitle kosong tak menyisakan celah di halaman login */
+.gate-sub:empty{display:none;margin:0}
+
+/* ═══ v28: partikel heksagon melayang + toggle password ═══ */
+.gparts{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.gp{position:absolute;bottom:-34px;clip-path:polygon(25% 4%,75% 4%,98% 50%,75% 96%,25% 96%,2% 50%);
+  background:rgba(216,200,154,.13);animation:gpFloat linear infinite;will-change:transform}
+.gp.mint{background:rgba(110,231,183,.11)}
+@keyframes gpFloat{
+  0%{transform:translate3d(0,0,0) rotate(0deg)}
+  50%{transform:translate3d(var(--sway,24px),-58vh,0) rotate(180deg)}
+  100%{transform:translate3d(calc(var(--sway,24px) * -0.4),-116vh,0) rotate(360deg)}
+}
+@media(prefers-reduced-motion:reduce){.gp{display:none}}
+.gpw{position:relative}
+.gpw input{padding-right:46px}
+#gate-eye{position:absolute;right:7px;top:50%;transform:translateY(-50%);width:33px;height:33px;
+  display:flex;align-items:center;justify-content:center;background:transparent;border:0;border-radius:9px;
+  color:#7E938A;cursor:pointer;transition:color .15s,background .15s}
+#gate-eye:hover{color:#DCE8E1;background:rgba(216,200,154,.09)}
+#gate-eye.on{color:var(--ac)}
+#gate-eye svg{width:17px;height:17px}
+
+/* ═══════════ WHALE ON-CHAIN (24 Sep) — tab terpisah whale.html ═══════════
+   Semua kelas diawali w- dan TIDAK menyentuh kelas terminal (index.html
+   memakai style.css yang sama, jadi wajib bebas tabrakan). */
+.wg-arca{display:flex;flex-direction:column;gap:10px;min-height:206px;justify-content:center}
+.wg-big{font-size:34px;font-weight:800;letter-spacing:-.02em;font-family:var(--mono)}
+.wg-sub{font-size:12px;color:var(--fg-3);max-width:34ch}
+.wg-kv{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 22px;margin-top:10px}
+.wg-kv span{display:block;font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3)}
+.wg-kv b{font-size:17px;font-weight:600}
+.wg-kv .up{color:var(--up)}
+.wg-kv .dn{color:var(--dn)}
+.wtable{background:var(--s1);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:12px}
+.whead,.wrow{display:grid;grid-template-columns:110px 92px 128px 1fr 90px 1.4fr 60px;gap:10px;align-items:center;padding:9px 14px}
+.whead{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3);border-bottom:1px solid var(--line);background:var(--s2)}
+.wrow{border-bottom:1px solid var(--line);font-size:12px}
+.wrow:last-child{border-bottom:0}
+.wrow:hover{background:var(--ac-w)}
+.whead-w{grid-template-columns:92px 1.3fr 1fr 1fr 1.2fr 60px}
+.wrow-w{grid-template-columns:92px 1.3fr 1fr 1fr 1.2fr 60px}
+.wt{color:var(--fg-3);white-space:nowrap}
+.wc{display:flex;align-items:center}
+.wch{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.wch .wdot{width:9px;height:9px;border-radius:999px;flex:none;display:inline-block}
+.wch b{font-weight:600;color:var(--fg-2)}
+.ww{display:flex;align-items:center;gap:6px}
+.wj{display:inline-block;padding:2px 8px;border-radius:5px;font-size:10.5px;font-weight:700;letter-spacing:.06em}
+.wj.jual{background:var(--dn-w);color:var(--dn)}
+.wj.beli{background:var(--up-w);color:var(--up)}
+.wj.tra{background:rgba(139,150,143,.12);color:var(--fg-2)}
+.wmega{font-size:9px;letter-spacing:.1em;color:var(--gold);border:1px solid rgba(216,200,154,.4);border-radius:4px;padding:1px 4px}
+/* 13 Okt — chip 💤 DORMAN: whale lama yang baru bangun. Emas redup, non-
+   mencolok; tooltip = penjelasan metode (umur tx kirim terakhir). */
+.wdorm{font-size:9px;letter-spacing:.06em;color:#e8c96a;border:1px solid rgba(232,201,106,.35);
+  border-radius:4px;padding:1px 4px;margin-left:4px;white-space:nowrap}
+.wn{color:var(--fg);font-weight:600;white-space:nowrap}
+.wv{color:var(--fg-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.wv.mega{color:var(--gold)}
+.wa{color:var(--fg-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.waddr{cursor:pointer;color:var(--fg-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.waddr:hover{color:var(--ac)}
+/* badge whale print ≥ $10jt (24 Sep) — merah, menyegarkan mata di antara baris */
+.wwhale{font-size:9px;letter-spacing:.08em;color:var(--dn);background:rgba(232,135,124,.18);
+  border:1px solid rgba(232,135,124,.55);border-radius:4px;padding:1px 5px;font-weight:700;white-space:nowrap}
+/* badge 🔥 WHALE BESAR ≥ $20jt (24 Sep, permintaan user) — api menyala: gradient
+   oranye-kuning yang bergerak + glow berdenyut, jelas beda dari WHALE merah */
+.wmega2{font-size:9px;letter-spacing:.08em;font-weight:800;border-radius:4px;padding:1px 6px;
+  white-space:nowrap;color:#1a0a00;
+  background:linear-gradient(270deg,#ff4d00,#ff9500,#ffd60a,#ff9500);background-size:300% 100%;
+  animation:whaleFire 1.6s linear infinite, whaleGlow 1.6s ease-in-out infinite}
+@keyframes whaleFire{0%{background-position:0% 0}100%{background-position:300% 0}}
+@keyframes whaleGlow{0%,100%{box-shadow:0 0 4px rgba(255,120,0,.5)}50%{box-shadow:0 0 12px rgba(255,150,0,.95)}}
+@media(prefers-reduced-motion:reduce){.wmega2{animation:none;background-position:50% 0;box-shadow:none}}
+/* sorot baris BARU (24 Sep): kedip hijau/merah sekali saat trade masuk antar
+   refresh; tag BARU kecil di kolom waktu. Konteks ganti (search baru/pindah
+   pool/filter) = seed senyap, tidak ada kedip palsu. */
+.qnew{animation:qFlash 3.2s ease-out both}
+.qnew.qn-up{--qc:var(--up)}
+.qnew.qn-dn{--qc:var(--dn)}
+@keyframes qFlash{
+  0%{background:rgba(110,231,183,0);box-shadow:inset 3px 0 0 var(--qc,transparent)}
+  12%{background:rgba(110,231,183,.16);box-shadow:inset 3px 0 0 var(--qc)}
+  45%{background:rgba(110,231,183,.16)}
+  100%{background:transparent;box-shadow:inset 3px 0 0 transparent}
+}
+.qnew.qn-dn{animation-name:qFlashDn}
+@keyframes qFlashDn{
+  0%{background:rgba(232,135,124,0);box-shadow:inset 3px 0 0 var(--qc,transparent)}
+  12%{background:rgba(232,135,124,.16);box-shadow:inset 3px 0 0 var(--qc)}
+  45%{background:rgba(232,135,124,.16)}
+  100%{background:transparent;box-shadow:inset 3px 0 0 transparent}
+}
+.qnewtag{font-size:8.5px;letter-spacing:.09em;color:#04120B;background:var(--ac);
+  border-radius:3px;padding:0 4px;margin-left:5px;vertical-align:middle}
+.qn-dn .qnewtag{background:var(--dn)}
+@media(prefers-reduced-motion:reduce){.qnew{animation:none;background:transparent}}
+.wl{text-align:right}
+.wlink{font-size:11px;color:var(--ac);white-space:nowrap}
+.wlink:hover{color:#9CF2CE}
+.w-empty{padding:22px 14px;color:var(--fg-3);font-size:12px;text-align:center}
+
+/* ── cek arah koin (whale.html, 24 Sep v2): chart besar + tabel live ── */
+.qbox{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+#q-coin{flex:1;max-width:380px;min-width:200px;background:var(--s2);border:1px solid var(--line-2);
+  border-radius:10px;color:var(--fg);font-family:var(--mono);font-size:14px;padding:13px 16px;
+  letter-spacing:.06em;text-transform:uppercase}
+#q-coin:focus{outline:none;border-color:var(--ac);box-shadow:0 0 0 3px var(--ac-w)}
+#q-btn{background:linear-gradient(135deg,var(--ac),var(--ac-2));color:#04120B;border:0;border-radius:10px;
+  font-weight:800;letter-spacing:.14em;font-size:12.5px;padding:0 26px;cursor:pointer;font-family:var(--mono);
+  box-shadow:0 4px 18px rgba(110,231,183,.22)}
+#q-btn:hover{filter:brightness(1.08)}
+#q-chart{margin-top:12px}
+#q-trades{margin-top:12px}
+.qload,.qerr{color:var(--fg-3);font-size:12px;padding:14px;background:var(--s1);
+  border:1px dashed var(--line-2);border-radius:8px}
+.qerr{color:var(--gold)}
+.qhead{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;
+  background:linear-gradient(180deg,var(--s2),var(--s1));border:1px solid var(--line-2);
+  border-radius:12px;padding:18px 20px;flex-wrap:wrap}
+.qsym{font-size:26px;font-weight:800;letter-spacing:.02em}
+.qpx{font-size:12.5px;color:var(--fg-3);margin-top:3px}
+.qbig{font-size:32px;font-weight:800;text-align:right;letter-spacing:-.01em}
+.qsub{font-size:12px;color:var(--fg-3);max-width:48ch;text-align:right;margin-top:4px}
+.qstats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+.qstat{background:var(--s1);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.qstat span{display:block;font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3)}
+.qstat b{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums}
+.qstat b.up{color:var(--up)}
+.qstat b.dn{color:var(--dn)}
+.qbar{display:flex;height:12px;border-radius:7px;overflow:hidden;margin-top:12px;background:var(--s2)}
+.qbar .qb{background:linear-gradient(90deg,var(--ac),var(--up));display:block;height:100%}
+.qbar .qs{background:linear-gradient(90deg,var(--dn),#C4675E);display:block;height:100%}
+.qbarl{display:flex;justify-content:space-between;font-size:11px;color:var(--fg-3);margin-top:6px}
+.qchart-big{position:relative;margin-top:14px;background:var(--s1);border:1px solid var(--line);
+  border-radius:12px;padding:22px 14px 10px}
+.qmini2{display:flex;align-items:center;gap:4px;height:150px}
+.qmini2 .qcol2{flex:1;min-width:5px;height:100%;display:flex;flex-direction:column;justify-content:center}
+.qmini2 .qcol2 i{display:block;width:100%;border-radius:3px}
+.qmini2 .qcol2 .qu{background:linear-gradient(180deg,var(--up),rgba(110,231,183,.25));align-self:flex-end;
+  box-shadow:0 0 10px rgba(110,231,183,.18)}
+.qmini2 .qcol2 .qd{background:linear-gradient(180deg,rgba(232,135,124,.25),var(--dn));align-self:flex-start;
+  box-shadow:0 0 10px rgba(232,135,124,.18)}
+.qzero{position:absolute;left:14px;right:14px;top:50%;height:1px;background:var(--line-2);pointer-events:none}
+.qcap{font-size:10.5px;color:var(--fg-3);margin-top:8px}
+/* chip filter whale-print (default $1jt, tersimpan localStorage) */
+.qchips{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:2px 0 10px}
+.qchipsl{font-size:11px;color:var(--fg-3)}
+.qchip{background:var(--s2);border:1px solid var(--line-2);border-radius:999px;color:var(--fg-2);
+  font-family:var(--mono);font-size:11px;padding:4px 12px;cursor:pointer;letter-spacing:.04em}
+.qchip:hover{border-color:var(--ac);color:var(--fg)}
+.qchip.on{background:var(--ac-w);border-color:var(--ac);color:var(--ac);font-weight:700}
+.qleg{font-size:10.5px;color:var(--fg-3);margin-top:4px}
+/* header + ringkasan tabel transaksi DEX */
+.qthd{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin:4px 0 8px}
+.qtl b{font-size:15px}
+.qtl .qvenue{display:block;font-size:11px;color:var(--fg-3);margin-top:2px}
+.qlive{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--ac)}
+.qlive .qdot{width:7px;height:7px;border-radius:999px;background:var(--ac);animation:p 2.6s cubic-bezier(.4,0,.6,1) infinite}
+/* badge "N BARU" (28 Sep): trade baru yang lolos filter aktif — menyala
+   dgn pulse 6 dtk saat masuk, lalu redup; hilang sendiri setelah >2 mnt.
+   Default tersembunyi; hanya tampil saat kelas hot/dim dipasang. */
+.qnewb{display:none;font-size:9px;font-weight:800;letter-spacing:.1em;border-radius:999px;
+  padding:2px 8px;font-family:var(--mono);white-space:nowrap}
+.qnewb.hot{display:inline-flex;align-items:center;color:#04120B;background:var(--ac);
+  animation:qNewPulse 1.2s ease-in-out infinite}
+.qnewb.dim{display:inline-block;color:var(--ac);background:var(--ac-w);opacity:.75}
+@keyframes qNewPulse{0%,100%{box-shadow:0 0 3px rgba(110,231,183,.5)}50%{box-shadow:0 0 10px rgba(110,231,183,.95)}}
+@media(prefers-reduced-motion:reduce){.qnewb.hot{animation:none}}
+.qsum{display:flex;align-items:center;gap:12px;font-size:12.5px;margin-bottom:8px}
+.qsu{font-weight:700}
+.qsu.up{color:var(--up)}
+.qsu.dn{color:var(--dn)}
+.qsm{flex:1;max-width:280px;height:8px;border-radius:5px;overflow:hidden;background:var(--s2)}
+.qsm .qsumbar{display:block;height:100%}
+.qtab .qgrid{display:grid;grid-template-columns:84px 1.3fr 74px 1fr 84px 1.2fr 52px;gap:10px;
+  align-items:center;padding:9px 14px}
+@media(max-width:900px){
+  .qstats{grid-template-columns:repeat(2,1fr)}
+  .qtab .qgrid{grid-template-columns:74px 1.1fr 66px 1fr 76px}
+  .qtab .qgrid > :nth-child(6),.qtab .qgrid > :nth-child(7){display:none}
+  .qbig{font-size:25px}
+}
+.wfoot{margin:14px 2px 26px;font-size:11px;line-height:1.7;color:var(--fg-3)}
+@media(max-width:900px){
+  .whead,.wrow{grid-template-columns:84px 74px 104px 1fr 76px;gap:8px}
+  .wrow > .wa,.whead > :nth-child(6),.wrow > .wl,.whead > :nth-child(7){display:none}
+  .whead-w,.wrow-w{grid-template-columns:74px 1.2fr 1fr 1fr;gap:8px}
+  .wrow-w > .wa,.whead-w > :nth-child(5),.wrow-w > .wl,.whead-w > :nth-child(6){display:none}
+  .wg-big{font-size:27px}
+}
+
+/* ── v19 (26 Sep): checklist alasan, popup detail, kotak analisis ── */
+/* checklist di popup "ambil" (admin) */
+.al-wrap{border:1px solid var(--line);border-radius:8px;background:var(--s1);
+  padding:10px 11px 7px;margin:0 0 9px}
+.al-hdr{font-size:11px;color:var(--fg-3);margin-bottom:8px}
+.al-line{display:flex;align-items:center;gap:8px;padding:3px 0}
+.al-cb{accent-color:var(--ac);width:14px;height:14px;cursor:pointer;flex:none;margin:0}
+.al-lb{flex:1;font-size:12px;color:var(--fg);cursor:pointer}
+.al-tf{background:var(--s2);border:1px solid var(--line-2);border-radius:5px;color:var(--fg);
+  font:inherit;font-size:11px;padding:2px 5px;cursor:pointer}
+.al-tf:focus{outline:none;border-color:var(--ac)}
+
+/* popup detail alasan (baca-saja, semua pengunjung) */
+.alview{width:100%}
+.almeta{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.almeta span{font-size:11.5px;font-weight:700}
+.aldir{letter-spacing:.06em}
+.algrid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.alit{display:flex;align-items:center;gap:7px;border:1px solid var(--line);
+  border-radius:6px;background:var(--s1);padding:5px 8px;font-size:11.5px;color:var(--fg-3)}
+.alit.on{border-color:rgba(110,231,183,.4);background:rgba(110,231,183,.06);color:var(--fg)}
+.almark{font-style:normal;width:13px;flex:none;color:var(--fg-3)}
+.alit.on .almark{color:var(--ac)}
+.alname{flex:1}
+.altf{font-size:10.5px;color:var(--fg-3);font-family:var(--mono,monospace)}
+.alit.on .altf{color:var(--gold)}
+.alnote{margin-top:10px;font-size:11.5px;color:var(--fg-2);line-height:1.55}
+.alfoot{margin-top:9px;font-size:10.5px;color:var(--fg-3)}
+
+/* tombol detail di sel live (samping tombol ambil / badge) */
+.apdetail{font:inherit;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
+  background:transparent;color:var(--fg-3);border:1px solid var(--line-2);border-radius:4px;
+  padding:2px 6px;cursor:pointer;margin-left:5px}
+.apdetail:hover{color:var(--gold);border-color:var(--gold)}
+
+/* kotak analisis winrate (di bawah bubbles) */
+.an-box{border:1px solid var(--line-2);border-radius:10px;background:
+  linear-gradient(180deg,rgba(110,231,183,.05),rgba(110,231,183,0) 55%),var(--s2);
+  padding:14px 15px}
+.an-chips{display:flex;gap:9px;flex-wrap:wrap}
+.an-chip{flex:1;min-width:180px;border:1px solid var(--line);border-radius:8px;
+  background:var(--s1);padding:9px 11px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.an-chip.best{border-color:rgba(110,231,183,.5);background:rgba(110,231,183,.06)}
+.an-rank{font-size:10px;color:var(--fg-3);font-weight:700}
+.an-chip.best .an-rank{color:var(--ac)}
+.an-nama{font-size:12px;letter-spacing:.02em}
+.an-wr{font-size:14px;font-weight:700;font-family:var(--mono,monospace)}
+.an-wr.pos{color:var(--up)}
+.an-wr.neg{color:var(--dn)}
+.an-n{font-size:10px;color:var(--fg-3)}
+.an-tip{margin-top:11px;font-size:11.5px;line-height:1.6;color:var(--fg-2);
+  border-top:1px dashed var(--line-2);padding-top:9px}
+.an-tip b{color:var(--gold)}
+.an-empty{font-size:11.5px;color:var(--fg-3);line-height:1.6}
+/* ring glow singkat saat komposisi #1 berubah: border & glow mint menyala
+   lalu memudar (3.2s, sekali jalan — kelas dipasang-lepas app.js) */
+.an-box.an-glow{animation:anGlowPulse 3.2s ease-out both}
+@keyframes anGlowPulse{
+  0%{box-shadow:0 0 0 1.5px var(--ac),0 0 26px rgba(110,231,183,.65);border-color:var(--ac)}
+  25%{box-shadow:0 0 0 1.5px var(--ac),0 0 26px rgba(110,231,183,.65)}
+  100%{box-shadow:0 0 0 0 rgba(110,231,183,0),0 0 0 rgba(110,231,183,0)}
+}
+/* chip #2/#3 pindah kursi: ring redup — jauh lebih senyap dari sorotan #1,
+   cukup supaya mata menangkap bahwa pelat kesempatan kedua/ketiga sudah geser */
+.an-chip.an-swap{animation:anSwapPulse 2.6s ease-out both}
+.an-chip.an-swap .an-rank{color:var(--gold)}
+@keyframes anSwapPulse{
+  0%{box-shadow:0 0 0 1px rgba(216,200,154,.4),0 0 10px rgba(216,200,154,.2);border-color:rgba(216,200,154,.55)}
+  25%{box-shadow:0 0 0 1px rgba(216,200,154,.4),0 0 10px rgba(216,200,154,.2)}
+  100%{box-shadow:0 0 0 0 rgba(216,200,154,0),0 0 0 rgba(216,200,154,0)}
+}
+@media(prefers-reduced-motion:reduce){
+  .an-box.an-glow,.an-chip.an-swap{animation:none;box-shadow:none}
+}
+/* drill-down kombinasi: chip terasa tombol + baris list di popup pembentuk */
+.an-chip{cursor:pointer}
+.an-chip:hover{border-color:var(--ac);background:rgba(110,231,183,.05)}
+.ko-rows{display:flex;flex-direction:column;gap:6px;max-height:52vh;overflow-y:auto;margin-top:10px}
+.ko-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:1px solid var(--line-2);border-radius:8px;background:var(--s1);padding:8px 11px;cursor:pointer}
+.ko-row:hover{border-color:var(--ac)}
+.ko-time{font:10.5px/1 var(--mono,monospace);color:var(--fg-3);letter-spacing:.02em}
+.ko-sym{font-size:12.5px;font-weight:700}
+.ko-pct{font-family:var(--mono,monospace);font-size:12px;font-weight:700}
+.ko-pct.pos{color:var(--up)}
+.ko-pct.neg{color:var(--dn)}
+.ko-pct.mut{color:var(--fg-2)}
+.ko-by{margin-left:auto;font-size:10px;color:var(--fg-3)}
+
+/* ── v20 (27 Sep): TF multi-pilih per alasan + popup detail baru ── */
+/* chip timeframe: satu alasan bisa dipilih di banyak TF sekaligus */
+.al-tfs{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.al-tfchip{background:var(--s2);border:1px solid var(--line-2);border-radius:999px;
+  color:var(--fg-3);font:inherit;font-size:10px;padding:2px 8px;cursor:pointer;letter-spacing:.03em}
+.al-tfchip:hover{border-color:var(--ac);color:var(--fg)}
+.al-tfchip.on{background:var(--ac-w);border-color:var(--ac);color:var(--ac);font-weight:700}
+
+/* popup detail v2: pill arah/hasil + chip alasan×TF */
+.alview2{width:100%}
+.almeta2{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.alpill{font-size:10.5px;font-weight:700;letter-spacing:.08em;border-radius:999px;
+  padding:4px 11px;border:1px solid var(--line-2);background:var(--s1);color:var(--fg-2)}
+.alpill.up,.alpill.win{color:var(--up);border-color:rgba(110,231,183,.45);background:rgba(110,231,183,.08)}
+.alpill.dn,.alpill.loss{color:var(--dn);border-color:rgba(232,135,124,.45);background:rgba(232,135,124,.08)}
+.alpill.open{color:var(--gold);border-color:rgba(216,200,154,.4);background:rgba(216,200,154,.08)}
+.alpct2{font-family:var(--mono,monospace);font-size:15px;font-weight:700}
+.alpct2.pos{color:var(--up)}
+.alpct2.neg{color:var(--dn)}
+.alpct2.mut{color:var(--fg-2)}
+.alwhen{margin-left:auto;font-size:10.5px;color:var(--fg-3)}
+.al-sect{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-3);
+  margin:4px 0 8px;padding-top:10px;border-top:1px dashed var(--line-2)}
+.al-chips{display:flex;flex-wrap:wrap;gap:6px}
+.al-chip{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(110,231,183,.35);
+  border-radius:8px;background:rgba(110,231,183,.06);padding:6px 10px;font-size:11.5px;color:var(--fg)}
+.al-chip b{font-weight:600}
+.al-chip-tf{font-style:normal;font-family:var(--mono,monospace);font-size:10px;font-weight:700;
+  color:var(--ac);background:rgba(110,231,183,.1);border-radius:5px;padding:1px 6px}
+.al-none{font-size:11.5px;color:var(--fg-3);line-height:1.6}
+/* ── badge riset backtest (2 Okt) — strip perbandingan tiga engine ── */
+#btstrip{margin:18px 0 0}
+#bt-badges{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:12px 0 10px}
+.bt-badge{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;background:var(--s1);position:relative;overflow:hidden}
+.bt-badge.is-1{border-color:rgba(110,231,183,.45);background:rgba(110,231,183,.05)}
+.bt-badge .bt-rank{position:absolute;top:10px;right:12px;font-family:var(--mono);font-size:10px;
+  font-weight:700;color:var(--fg-3);letter-spacing:.08em}
+.bt-badge.is-1 .bt-rank{color:var(--ac)}
+.bt-badge .bt-nama{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--fg);display:flex;gap:8px;align-items:center}
+.bt-badge .bt-tf{font-size:10px;color:var(--fg-3);border:1px solid var(--line-2);border-radius:4px;padding:0 5px}
+.bt-badge .bt-tf.t15m{color:#7CE38B;border-color:rgba(124,227,139,.4)}
+.bt-badge .bt-tf.t30m{color:#C792EA;border-color:rgba(199,146,234,.4)}
+.bt-badge .bt-tf.t2h{color:#FF6B6B;border-color:rgba(255,107,107,.4)}  .bt-badge .bt-tf.twhale{color:#4DC9F6;border-color:rgba(77,201,246,.4)}
+  .bt-badge .bt-tf.tob{color:#F2A65A;border-color:rgba(242,166,90,.4)}
+.bt-badge .bt-tf.t1h{color:#4DC9F6;border-color:rgba(77,201,246,.4)}
+.bt-badge .bt-tf.t4h{color:#7CE38B;border-color:rgba(124,227,139,.4)}
+.bt-badge .bt-angka{display:flex;gap:16px;margin-top:9px}
+.bt-badge .bt-angka div{display:flex;flex-direction:column}
+.bt-badge .bt-angka .k{font-size:9.5px;color:var(--fg-3);text-transform:uppercase;letter-spacing:.07em}
+.bt-badge .bt-angka .v{font-size:15px;font-weight:700;font-family:var(--mono)}
+.bt-badge .v.pos{color:var(--up)}
+.bt-badge .v.neg{color:var(--dn)}
+/* 5 Okt — bukti signifikansi. Warna "warn" (amber) dipakai untuk nilai yang
+   POSITIF tapi bootstrap 95%-nya memotong nol: bukan negatif, tapi juga belum
+   terbukti unggul. Membedakannya dari hijau penting supaya totalR +125R
+   tidak terbaca setara dengan +543R padahal keduanya takSebanding. */
+.bt-badge .v.warn{color:#E0A458}
+.bt-badge .bt-ci{display:flex;flex-direction:column;margin-top:9px;padding-top:9px;
+  border-top:1px dashed var(--line-2)}
+.bt-badge .bt-ci .k{font-size:9.5px;color:var(--fg-3);text-transform:uppercase;letter-spacing:.07em}
+.bt-badge .bt-ci .v{font-size:11.5px;font-family:var(--mono);font-weight:600}
+.bt-badge .bt-arah{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.bt-badge .bt-a{font-family:var(--mono);font-size:10.5px;padding:2px 7px;border-radius:4px;
+  border:1px solid var(--line-2);color:var(--fg-3)}
+.bt-badge .bt-a.pos{color:var(--up);border-color:rgba(110,231,183,.3)}
+.bt-badge .bt-a.neg{color:var(--dn);border-color:rgba(230,110,110,.3)}
+.bt-badge .bt-a.warn{color:#E0A458;border-color:rgba(224,164,88,.4)}
+.bt-badge .bt-a.pos.warn{color:#E0A458}
+/* ⚠️ 5 Okt: aturan .bt-badge.is-off & .bt-off (badge engine nonaktif) sudah
+   DIHAPUS. Dulu dipakai untuk meredupkan kartu ⚡ SNIPER 1h plus cap
+   NONAKTIF; sekarang kartu itu dihapus dari tampilan, jadi tidak ada lagi
+   elemen berkelas tersebut. Jangan dikembalikan tanpa alasan. */
+/* ── kartu 🐳 WHALE (5 Okt) — sengaja terpisah dari strip bandeng ── */
+#whalestrip{margin:18px 0 0}
+#whalestrip .card{border-color:rgba(255,213,79,.28);background:rgba(255,213,79,.03)}
+#whale-isi{margin:12px 0 10px}
+.wh-angka{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px}
+.wh-angka div{display:flex;flex-direction:column;gap:2px}
+.wh-angka .k{font-size:9.5px;color:var(--fg-3);text-transform:uppercase;letter-spacing:.07em}
+.wh-angka .v{font-size:20px;font-weight:700;font-family:var(--mono)}
+.wh-angka .v.pos{color:var(--up)}
+.wh-angka .v.neg{color:var(--dn)}
+/* split IS → OOS: bukti resep tidak overfit ke periode pemilihan */
+.wh-split{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;margin-top:12px;
+  padding:9px 11px;border:1px solid var(--line);border-radius:var(--r);background:var(--s1)}
+.wh-split .k{font-size:9.5px;color:var(--fg-3);text-transform:uppercase;letter-spacing:.07em}
+.wh-split .v{font-family:var(--mono);font-size:12px;color:var(--fg-2)}
+/* sebaran bulan: panjang bar = |EV/R|, warna = tanda */
+.wh-bulan{display:flex;align-items:flex-end;gap:6px;margin-top:14px;
+  padding:10px 11px 8px;border:1px solid var(--line);border-radius:var(--r);background:var(--s1)}
+.wh-col{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0}
+/* track = tinggi PASTI, tanpa ini height:% pada bar tidak resolve dan
+   seluruh grafik bulan tak terlihat (hanya angka & labelnya). */
+.wh-track{width:100%;height:110px;display:flex;align-items:flex-end;justify-content:center}
+.wh-col .wh-bar{width:100%;max-width:34px;border-radius:3px 3px 0 0;background:var(--fg-3);opacity:.5}
+.wh-col.pos .wh-bar{background:var(--up);opacity:.7}
+.wh-col.neg .wh-bar{background:var(--dn);opacity:.65}
+.wh-col .wh-v{font-family:var(--mono);font-size:10px;margin-top:5px}
+.wh-col.pos .wh-v{color:var(--up)}
+.wh-col.neg .wh-v{color:var(--dn)}
+.wh-col .wh-b{font-family:var(--mono);font-size:10px;color:var(--fg-2);margin-top:1px}
+.wh-col .wh-n{font-size:9px;color:var(--fg-3)}
+.wh-not{font-size:11px;color:var(--fg-3);margin:8px 0 0;line-height:1.6}
+@media (max-width:560px){
+  .wh-angka{grid-template-columns:repeat(2,1fr)}
+  .wh-bulan{gap:3px;padding:8px 6px 6px}
+  .wh-col .wh-v{font-size:9px}
+}
+/* ══ 13 Okt — lightbox gambar (klik = perbesar super jelas) + dropdown
+   bulan klasemen/riwayat + tabel ringkasan akurasi per engine ══ */
+.lbx{position:fixed;inset:0;z-index:100000;background:rgba(2,6,4,.92);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px}
+.lbx img{max-width:min(2400px,97vw);max-height:86vh;object-fit:contain;
+  border:1px solid var(--line);border-radius:10px;background:#000;
+  box-shadow:0 18px 60px rgba(0,0,0,.6)}
+.lbx-bar{display:flex;gap:10px;margin-bottom:10px;align-items:center}
+.lbx-bar .hh-fchip{cursor:pointer}
+.lbx-x{font-size:16px;padding:5px 16px;border-radius:8px;border:1px solid var(--line);
+  background:var(--s1,#131a16);color:var(--fg);cursor:pointer}
+.lbx-cap{margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--fg-2);opacity:.85;text-align:center}
+select.plog-bln,select.lg-sel{padding:6px 10px;border-radius:8px;border:1px solid var(--line);
+  background:var(--s0,#101614);color:var(--fg);font-family:var(--mono);font-size:12px;cursor:pointer}
+select.lg-sel{margin-left:auto}
+.plog-akk{margin:8px 0 16px}
+.plog-akk .pn-h{margin-bottom:6px}
+.plog-akk table{width:100%;border-collapse:collapse;background:var(--s1);
+  border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.plog-akk th,.plog-akk td{padding:6px 10px;border-bottom:1px solid var(--line);
+  font-family:var(--mono);font-size:11.5px;text-align:left;color:var(--fg)}
+.plog-akk th{color:var(--fg-3);font-weight:600;background:var(--s0)}
+.plog-akk td.pos{color:var(--up)}
+.plog-akk td.neg{color:var(--dn)}
+.plog-akk td.mut{color:var(--fg-2)}
+
+/* 14 Okt — notifikasi per engine (BRICK/HARVEST/SWING/WHALE) */
+.nk-row{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start}
+.nk-h{flex:100%;font-family:var(--mono);font-size:10.5px;color:var(--fg-3);letter-spacing:.06em;text-transform:uppercase}
+.nk-t{font-family:var(--mono);font-size:12px;padding:7px 10px;border:1px solid rgba(110,231,183,.25);background:var(--s0);color:var(--fg-2);border-radius:6px;cursor:pointer;opacity:.5}
+.nk-t.on{opacity:1;color:var(--up);border-color:rgba(110,231,183,.55);background:rgba(110,231,183,.07)}
+
+/* 14 Okt — banner data basi (di atas bar saat data.json > 3 jam) */
+.stalebar{position:sticky;top:0;left:0;right:0;z-index:60;background:rgba(230,4,0,.14);color:#ff8a80;font-family:var(--mono);font-size:11px;padding:6px 12px;text-align:center;letter-spacing:.03em;border-bottom:1px solid rgba(230,4,0,.35)}
+.toast.t-hint .tsub{max-width:320px;white-space:normal;line-height:1.5}
+
+/* 14 Okt — highlight baris hari-ini di heat table × hari */
+.hh-t.hh-today, .hh-today{background:rgba(110,231,183,.07)}
+.hh-today .hh-jam{color:var(--up)}
+
+/* 14 Okt — whale search input */
+.wsearch{background:var(--s0);border:1px solid var(--line);color:var(--fg);font-family:var(--mono);font-size:11.5px;padding:5px 10px;border-radius:7px;min-width:180px;margin-left:auto}
+.wsearch:focus{border-color:var(--up);outline:none}
+
+/* 14 Okt — kolom last & jarak live */
+.jrk-last{color:var(--fg-2)}
+.jrk-c{font-variant-numeric:tabular-nums}
+
+/* ── 15 Okt: nuansa latar ikut gauge live (cangkok sync laptop) ──────
+   Lapisan #tema duduk DI ATAS grid halaman (z 0) tapi DI BAWAH semua
+   konten (wrap z 1): crash api kebakaran, short bara merah, long hijau
+   bull, altseason aurora, deg amber, netral tanpa lapisan. */
+#tema{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;
+  transition:opacity 1.4s ease}
+body.tema-crash #tema{opacity:1;background:
+  radial-gradient(120% 62% at 50% 118%,rgba(255,109,94,.38),transparent 62%),
+  radial-gradient(85% 42% at 16% 112%,rgba(255,148,52,.26),transparent 60%),
+  radial-gradient(85% 42% at 84% 112%,rgba(202,38,52,.32),transparent 60%),
+  linear-gradient(180deg,transparent 64%,rgba(26,9,7,.45) 100%);
+  animation:tema-api 3.8s ease-in-out infinite}
+body.tema-short #tema{opacity:1;background:
+  radial-gradient(110% 50% at 50% 116%,rgba(232,135,124,.16),transparent 62%),
+  radial-gradient(70% 34% at 20% 110%,rgba(232,135,124,.10),transparent 60%)}
+/* 16 Okt (PILIHAN USER): long = Jade-Emas; altseason = CYBER LIME —
+   lime #B6F36B + cyan #22D3EE + grid digital tipis (kesan terminal altseason). */
+body.tema-long #tema{opacity:1;background:
+  radial-gradient(110% 52% at 50% 116%,rgba(45,212,167,.22),transparent 62%),
+  radial-gradient(70% 34% at 14% 110%,rgba(20,184,166,.14),transparent 60%),
+  radial-gradient(42% 26% at 84% 112%,rgba(238,180,76,.14),transparent 60%)}
+body.tema-altseason #tema{opacity:1;background:
+  radial-gradient(110% 55% at 50% 116%,rgba(182,243,107,.22),transparent 62%),
+  radial-gradient(80% 40% at 14% 108%,rgba(34,211,238,.18),transparent 60%),
+  radial-gradient(80% 40% at 86% 108%,rgba(163,230,53,.14),transparent 60%),
+  linear-gradient(rgba(34,211,238,.05) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(34,211,238,.05) 1px,transparent 1px);
+  background-size:auto,auto,auto,44px 44px,44px 44px}
+body.tema-deg #tema{opacity:1;background:
+  radial-gradient(100% 48% at 50% 116%,rgba(238,180,76,.16),transparent 62%)}
+@keyframes tema-api{0%,100%{filter:brightness(1)}18%{filter:brightness(1.22)}
+  37%{filter:brightness(.88)}55%{filter:brightness(1.14)}74%{filter:brightness(.95)}}
+@media (prefers-reduced-motion:reduce){body.tema-crash #tema{animation:none}}
+
+/* ── 16 Okt: lapisan partikel nuansa (#nuansa) — pasar jadi "hidup" ──
+   Canvas duduk tepat setelah #tema (z 0, di bawah konten): salju netral,
+   CRONA PULSA long, DENJIRI NEON altseason, gerimis merah short, api
+   semua sisi crash, debu amber deg. Dirender app.js; hormati reduced-motion. */
+#nuansa{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* chips pratinjau nuansa (panel gauge) — tak mengubah data, tampilan saja */
+.tema-demo{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+  justify-content:center}
+.tema-demo .tt{font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--fg-3);margin-right:2px}
+.tema-demo .tag{font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--fg-3);border:1px dashed var(--line-2);border-radius:999px;
+  padding:3px 8px}
+.tema-demo .tag.live{color:var(--ac);border-style:solid;
+  border-color:var(--ac);}
+.tema-demo .tag.pratinjau{color:var(--gold);border-style:solid;
+  border-color:var(--gold);}
+.tema-demo button{font:11px/1.5 var(--mono);letter-spacing:.08em;
+  color:var(--fg-2);background:transparent;border:1px solid var(--line-2);
+  border-radius:999px;padding:3px 10px;cursor:pointer}
+.tema-demo button:hover{color:var(--fg);border-color:var(--fg-3)}
+.tema-demo button.on{color:#070B09;font-weight:700;border-color:transparent}
+/* 16 Okt: chip preview ikut warna baru (long=jade, altseason=ungu aurora) */
+.tema-demo button.on[data-t="long"]{background:#2DD4A7}
+.tema-demo button.on[data-t="altseason"]{background:#B6F36B}
+.tema-demo button.on[data-t="short"]{background:#E8877C}
+.tema-demo button.on[data-t="crash"]{background:#FF6D5E}
+.tema-demo button.on[data-t="deg"]{background:#EEB44C}
+.tema-demo button.on[data-t="netral"]{background:#D9E2DD}
+
+   Saat dibuka di HP, body dapat kelas .mode-dinamis (default) atau
+   .mode-desktop sesuai chip pilihan. Di desktop asli chip tidak ada dan
+   tak ada kelas — tampilan penuh seperti biasa. Chip mengambang di kanan
+   bawah supaya gampang dijangkau jempol. */
+.tchip{position:fixed;right:12px;bottom:14px;z-index:60;display:none;
+  font-family:var(--mono);font-size:11px;letter-spacing:.05em;
+  color:var(--fg-2);background:rgba(7,11,9,.85);backdrop-filter:blur(6px);
+  border:1px solid var(--line-2);border-radius:999px;padding:8px 13px;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  box-shadow:0 4px 14px rgba(0,0,0,.35);transition:color .15s,border-color .15s}
+.tchip:active{transform:scale(.96)}
+@media(pointer:coarse){body.mode-dinamis .tchip,body.mode-desktop .tchip{display:block}}
+
+/* ── versi dinamis: compact & kolom sempit — terminal yang pas di jempol ── */
+body.mode-dinamis{font-size:13px}
+body.mode-dinamis .wrap{padding:0 11px}
+body.mode-dinamis section{margin:0 0 20px}
+body.mode-dinamis .strip{gap:8px;margin:12px 0 18px}
+body.mode-dinamis .ch{padding:11px 12px}
+body.mode-dinamis .ch > .rows{gap:5px}
+body.mode-dinamis .row{font-size:11px}
+body.mode-dinamis .card{padding:12px}
+/* tabel: dulu min-width:820px = WAJIB scroll menyamping di HP. Dinamis:
+   tabel boleh sempit, font kecil, sel padat — kebaca tanpa menScroll. */
+body.mode-dinamis table{min-width:0;font-size:11px}
+body.mode-dinamis th{padding:7px 8px;font-size:9px;letter-spacing:.08em}
+body.mode-dinamis td{padding:6px 8px}
+body.mode-dinamis .tw{max-height:52vh;overscroll-behavior:contain}
+/* kolom yang kurang penting di layar kecil disembunyikan (dihilangkan lewat
+   header ganda: th&td berlabel sama disembunyikan sekaligus) */
+body.mode-dinamis .col-extra{display:none}
+body.mode-dinamis .grid2{grid-template-columns:1fr;gap:8px}
+body.mode-dinamis .sec-h{gap:8px;margin-bottom:9px}
+body.mode-dinamis .tab{padding:4px 8px;font-size:10px}
+body.mode-dinamis h2{font-size:12px}
+body.mode-dinamis .ak-grid{grid-template-columns:1fr}
+/* bubble: kanvas lebih pendek di HP supaya layar tetap utk daftar kanal */
+body.mode-dinamis .bb-plot{height:330px}
+body.mode-desktop{font-size:inherit}
+body.mode-desktop .tchip{display:block}
+@media(pointer:fine){body.mode-desktop .tchip{display:none}}

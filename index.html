@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#08100C" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<title>QKUK Terminal — live signal feed</title>
+<meta name="description" content="Live crypto signal terminal. Watchlist, signals and accuracy — Harvest, Engine OB, Swing and Whale — written straight from the engine.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23070B09'/%3E%3Cg stroke='%236EE7B7' fill='none' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M27.4 16 L21.7 25.9 L10.3 25.9 L4.6 16 L10.3 6.1 L21.7 6.1 Z' stroke-width='2.3'/%3E%3Cpath d='M12 12.2 L15.5 16 L12 19.8' stroke-width='2.3'/%3E%3C/g%3E%3Crect x='17.4' y='15.1' width='4.2' height='1.9' rx='.95' fill='%236EE7B7'/%3E%3C/svg%3E">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LXAUy0kvUSjxAz/fkXLmBF15ezkgQYHRQhirnM4uq2Y='; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://fapi.binance.com https://api.binance.com https://textdb.dev https://api.coingecko.com https://api.coinpaprika.com https://stablecoins.llama.fi; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noarchive">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<script>try{if(sessionStorage.getItem("qkuk_admin_ok")==="1"||sessionStorage.getItem("qkuk_user_ok")==="1")document.documentElement.classList.add("authed")}catch(e){}</script>
+<link rel="stylesheet" href="style.css?v=20261016i">
+</head>
+<body>
+
+<div id="gate">
+  <div class="gparts" aria-hidden="true"></div>
+  <div class="gate-box">
+    <div class="gate-logo">
+      <span class="logo">
+        <svg class="mark" viewBox="0 0 32 32" role="img" aria-label="Qkuk Terminal">
+          <path d="M28 16 L22 26.39 L10 26.39 L4 16 L10 5.61 L22 5.61 Z"
+                fill="none" stroke="currentColor" stroke-width="2.1"
+                stroke-linejoin="round"/>
+          <path d="M11.7 11.9 L15.4 16 L11.7 20.1" fill="none" stroke="currentColor"
+                stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect class="cur" x="17.4" y="15.05" width="4.4" height="1.9" rx=".95"
+                fill="currentColor"/>
+        </svg>
+        <span class="wm"><b>Qkuk</b> Terminal</span>
+      </span>
+    </div>
+    <div class="gate-sub"></div>
+    <div class="gate-form">
+      <input id="gate-user" autocomplete="username" spellcheck="false" placeholder="username">
+      <div class="gpw">
+        <input id="gate-pass" type="password" autocomplete="current-password" placeholder="password">
+        <button id="gate-eye" type="button" title="tampilkan password" aria-label="tampilkan password">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <button id="gate-btn" type="button">MASUK</button>
+    </div>
+    <div id="gate-err" class="gate-err" role="alert"></div>
+    <div id="gate-chain" class="gate-chain">
+      <div class="glink">
+        <span class="gnode"></span><i></i><span class="gnode"></span><i></i><span class="gnode"></span><i></i><span class="gnode"></span><i></i><span class="gnode"></span>
+      </div>
+      <div class="ghash" id="gate-hash">0x…</div>
+      <div class="ggrant">✓ AKSES DIBERIKAN — MENAUTKAN BLOK</div>
+    </div>
+  </div>
+</div>
+
+<div class="bar">
+  <div class="bar-in">
+    <span class="logo">
+      <svg class="mark" viewBox="0 0 32 32" role="img" aria-label="Qkuk Terminal">
+        <!-- ⚠️ Versi pertama memakai kotak bulat + ekor diagonal (niatnya huruf Q).
+             Di ukuran 23px itu terbaca sebagai IKON KACA PEMBESAR — kotak bulat
+             mirip lensa, ekornya mirip gagang. Diganti HEKSAGON: bentuk blok /
+             node yang sudah baku di kripto dan tidak punya tabrakan makna itu.
+             Isinya prompt ">" + kursor berkedip = terminal yang hidup, sejalan
+             dgn lampu LIVE di sebelahnya. Huruf Q-nya dibawa oleh wordmark. -->
+        <path d="M28 16 L22 26.39 L10 26.39 L4 16 L10 5.61 L22 5.61 Z"
+              fill="none" stroke="currentColor" stroke-width="2.1"
+              stroke-linejoin="round"/>
+        <path d="M11.7 11.9 L15.4 16 L11.7 20.1" fill="none" stroke="currentColor"
+              stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect class="cur" x="17.4" y="15.05" width="4.4" height="1.9" rx=".95"
+              fill="currentColor"/>
+      </svg>
+      <span class="wm"><b>Qkuk</b> Terminal</span>
+    </span>
+    <span class="pill"><span class="dot" id="dot"></span><span id="state">connecting</span></span>
+    <span class="kv sp">WIB <b id="clock">--:--:--</b></span>
+    <span class="kv">engine <b id="stamp">—</b></span>
+    <span class="kv btc">BTC <b id="btcpx">—</b></span>
+    <span class="kv">refresh <b id="cd">60s</b></span>
+    <button id="mute" class="mute" type="button" aria-pressed="false"
+      title="Suara notifikasi: NYALA — klik untuk mati">🔊</button>
+    <button id="sndset" class="mute" type="button" aria-label="Pengaturan suara notifikasi"
+      title="Pengaturan suara notifikasi — pilih 1 dari 20 jenis & atur volume">⚙</button>
+    <a id="whale-link" class="mute" href="whale.html" draggable="false"
+      title="Tab Whale on-chain — arus whale BTC & ETH ala Lookonchain">🐋</a>
+    <a id="riwayat-link" class="mute" href="riwayat.html" draggable="false"
+      title="Riwayat pilihan admin — kurva nett % per bulan + semua trade lama">📜</a>
+    <a id="archive-link" class="mute" href="archive.html" draggable="false"
+      title="Arsip data harian — lihat data.json lama lewat tombol tanggal">🗄</a>
+  </div>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+
+<div class="wrap">
+
+  <section id="btstrip">
+    <div class="card">
+      <div class="card-h"><h3>Backtest kanal aktif — 18 bulan · TP 2R · hold 168j · setelah gate arah rezim BTC</h3><span class="lg" id="bt-lg"></span></div>
+      <div id="bt-badges"></div>
+      <p class="cap">Angka riset backtest · hanya setup yang lolos gate arah rezim BTC.</p>
+    </div>
+  </section>
+
+  <section id="dir">
+    <div class="dir">
+      <div class="gwrap">
+        <div class="glow" id="glow"></div>
+        <svg class="gauge" viewBox="0 0 280 180" role="img" aria-label="Altcoin direction gauge">
+          <g id="g-fl"></g><g id="g-arc"></g><g id="g-ndl"></g>
+        </svg>
+        <div class="gl"><span>SHORT</span><span>NEUTRAL</span><span>LONG</span></div>
+        <div class="gbias" id="gbias">--</div>
+        <div class="gname" id="gname">altcoin direction</div>
+      </div>
+      <div class="dmeta" id="dmeta"></div>
+    </div>
+  </section>
+
+  <section id="bubbles">
+    <div class="sec-h">
+      <h2><i>&gt;</i> Bubbles</h2>
+      <span class="hint">daftar sinyal — % change is live 24h from Binance</span>
+      <div class="tabs" id="b-tabs" role="tablist"></div>
+    </div>
+    <div class="bb-stage">
+      <div class="bb-bar">
+        <div class="bb-legend">
+          <span><i class="lg-up"></i>up 24h</span>
+          <span><i class="lg-dn"></i>down 24h</span>
+          <span><i class="lg-id"></i>no 24h data</span>
+        </div>
+        <input id="b-q" type="search" placeholder="sorot koin… (e.g. AVAX)" aria-label="Highlight bubbles by coin">
+      </div>
+      <div class="b-chips" id="b-chips"></div>
+      <div class="bb-plot" id="bb-plot"></div>
+      <div class="bb-tip" id="bb-tip"></div>
+    </div>
+
+    <p class="cap">Hold = geser · tap = buka grafik TradingView · angka = %24 jam.</p>
+  </section>
+
+  <section id="analisa">
+    <div class="sec-h">
+      <h2><i>&gt;</i> Kotak analisis</h2>
+      <span class="hint">kombinasi alasan × timeframe dengan winrate live tertinggi — berubah otomatis</span>
+    </div>
+    <div class="an-box" id="analisa-box"></div>
+    <p class="cap">Winrate live dari pick yang sudah di-resolve — kombinasi terbaik tampil di sini.</p>
+  </section>
+
+  <section id="signals">
+    <div class="sec-h">
+      <h2><i>&gt;</i> Signals</h2>
+      <span class="hint">entries &amp; watchlist issued to the group — satu tempat, tanpa pindah-pindah</span>
+      <div class="tabs" id="s-tabs" role="tablist"></div>
+    </div>
+    <div class="s-tools">
+      <input id="s-q" type="search" placeholder="search pair… (e.g. BTC)" aria-label="Search signals by pair">
+      <select id="s-sort" aria-label="Sort signals">
+        <option value="ts">newest first</option>
+        <option value="pick">picked first</option>
+        <option value="pnl">best R first</option>
+        <option value="loss">worst R first</option>
+        <option value="sym">pair A–Z</option>
+      </select>
+      <select id="s-side" aria-label="Filter signals by side">
+        <option value="">all sides</option>
+        <option value="long">long only</option>
+        <option value="short">short only</option>
+      </select>
+    </div>
+    <div class="tw" id="s-table"></div>
+  </section>
+
+  <section id="kamu">
+    <div class="sec-h">
+      <h2><i>&gt;</i> Picked by you</h2>
+      <span class="hint">winrate LIVE dari pilihanmu — bukan backtest</span>
+    </div>
+    <div class="ak-grid" id="kamu-grid"></div>
+    <p class="cap">Tandai &amp; resolve koin langsung di tabel Signals — winrate di sini murni hasil live-mu.</p>
+  </section>
+
+  <section id="charts">
+    <div class="grid2">
+      <div class="card">
+        <div class="card-h"><h3>Winrate live — Brick, Harvest 2h, Swing 4h &amp; Whale</h3><div class="lg" id="eq-lg"></div></div>
+        <svg class="ch" id="eq" role="img" aria-label="Kurva kumulatif hasil live per kanal"></svg>
+        <p class="cap">Kurva kumulatif hasil live resolve admin.</p>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>Win rate by WIB hour — 00:00 to 23:00</h3><div class="lg" id="hr-lg"></div></div>
+        <svg class="ch" id="hr" role="img" aria-label="Winrate per jam WIB, empat kanal live"></svg>
+        <p class="cap">Winrate per jam WIB · 4 kanal · hover untuk rincian.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="strip" id="strip"></div>
+
+  <footer id="footer">
+    <span>Built and operated by <a href="https://luthfihadi78.github.io">Moch. Luthfi Hadiwidjaja</a></span>
+    <span id="foot">—</span>
+  </footer>
+</div>
+
+<script src="app.js?v=20261016i" defer></script>
+</body>
+</html>
