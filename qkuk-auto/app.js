@@ -3382,7 +3382,7 @@ if (window.top !== window.self) { try { window.top.location = window.self.locati
      selain api.github.com. Semua pengunjung mewarisi hasilnya, dan
      section "Picked by you" menampilkan WINRATE LIVE dari resolve ini
      — bukan backtest. */
-  var TXTDB_ID = "qkuk-53bc732eb802f8c087142876"; // penyimpanan cloud live picks (textdb.dev)
+  var TXTDB_ID = "qkuk-auto-bc220441892c5228"; // penyimpanan cloud live picks (textdb.dev)
   var PICKS = {};
   /* 11 Okt — DUA ADMIN (permintaan user): Qkuk + Admin2 (Gerry); 22 Okt + uul. Username
      disimpan DENGAN BESAR-KECIL persis apa adanya, tapi pencocokan login
