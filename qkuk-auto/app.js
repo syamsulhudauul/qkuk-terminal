@@ -2158,7 +2158,7 @@ if (window.top !== window.self) { try { window.top.location = window.self.locati
       var adminEl = b.querySelector(".bbadmin");
       if (on && pk) {
         var STT = { menunggu: "Menunggu", entry: "Ambil Posisi", tp: "Take Profit" };
-        var txt = (pk.by || "Qkuk") + (pk.side ? " · " + pk.side : "") + " · " + (STT[pk.status] || "Menunggu");
+        var txt = (pk.by || "Uul") + (pk.side ? " · " + pk.side : "") + " · " + (STT[pk.status] || "Menunggu");
         /* 12 Okt — prioritas-6: dua admin pilih simbol sama → tampilkan keduanya dgn ⚔ */
         if ((pk.satu || []).length > 1) {
           txt = "\u2694 " + (pk.satu || []).map(function (x) {
@@ -3391,10 +3391,8 @@ if (window.top !== window.self) { try { window.top.location = window.self.locati
      panggung ("Qkuk"/"Gerry") dipakai sbg penanda di pick, bubbles,
      live score & kotak analisis — KONSTAN, tidak boleh diganti. */
   var ADMINS = {
-    "admin":  { who: "Qkuk",  hash: "d78f6114b477459dfaacf645a3d5453b33437cce560a016ffbc2051408d3caa0" },
-    "Admin2": { who: "Gerry", hash: "b12039778e31e421be674d6b5f02b126b95f5fcd7fd506b142a56062bbf3e313" },
-    /* 22 Okt: akun uul (pemilik) — username "uul" */
-    "uul":    { who: "Uul",   hash: "ae9b93d7908bf5e120bdf33ba78007f690271d2c57a74354a638c223afac448f" }
+    /* 22 Okt: automation FE — SATU admin: uul (pemilik) */
+    "uul": { who: "Uul", hash: "ae9b93d7908bf5e120bdf33ba78007f690271d2c57a74354a638c223afac448f" }
   };
   /* 26 Sep — CHECKLIST ALASAN AMBIL POSISI: setiap pick bisa dicatat alasannya
      (struktur/setup yang bikin admin ambil posisi) beserta TIMEFRAME masing2
@@ -3442,7 +3440,7 @@ if (window.top !== window.self) { try { window.top.location = window.self.locati
     return alasanPairs(p).map(function (x) { return x.a + " " + x.tf; });
   }
   function alasanStr(p) { return alasanList(p).join(", "); }
-  var AUTH = { user: "admin", hash: ADMINS["admin"].hash };
+  var AUTH = { user: "uul", hash: ADMINS["uul"].hash };
   function sha256hex(s) {
     return crypto.subtle.digest("SHA-256", new TextEncoder().encode(s))
       .then(function (buf) {
@@ -3472,9 +3470,9 @@ if (window.top !== window.self) { try { window.top.location = window.self.locati
      bubbles & riwayat tahu TANGAN SIAPA. */
   function meAdmin() {
     var a = SS.get("qkuk_admin_who");
-    return a === "Qkuk" || a === "Gerry" ? a : "Qkuk";
+    return a === "Uul" ? a : "Uul";   /* 22 Okt: satu admin (uul) */
   }
-  function restoreWho() { if (!SS.get("qkuk_admin_who")) SS.set("qkuk_admin_who", "Qkuk"); }
+  function restoreWho() { if (!SS.get("qkuk_admin_who")) SS.set("qkuk_admin_who", "Uul"); }
   restoreWho();
   var PLOG = [];          // riwayat semua aksi admin (ambil/koreksi/hapus)
   /* 16 Okt — kunci pick punya DUA bentuk (bukti live score tak pernah
@@ -3724,7 +3722,7 @@ if (window.top !== window.self) { try { window.top.location = window.self.locati
           var p = r.apick; if (!p || (p.win !== 1 && p.win !== 0)) return;
           alasanList(p).forEach(function (x) {
             var e = teknik[x] || (teknik[x] = { Qkuk: [0, 0], Gerry: [0, 0] });
-            var who = p.by === "Gerry" ? "Gerry" : "Qkuk";   // pick lama tanpa "by" = Qkuk
+            var who = p.by || "Uul";   // 22 Okt: satu admin
             e[who][0]++; if (p.win === 1) e[who][1]++;
             if (order.indexOf(x) < 0) order.push(x);
           });
@@ -3860,7 +3858,7 @@ if (window.top !== window.self) { try { window.top.location = window.self.locati
       var p = PICKS[k];
       if (!p) return;
       if (kpOf(k).ts.slice(0, 7) !== bln) return;
-      var who = (p.by || kpOf(k).admin) === "Gerry" ? "Gerry" : "Qkuk";
+      var who = p.by || kpOf(k).admin || "Uul";
       var e = out[who]; e.ambil++;
       if (p.win !== 1 && p.win !== 0) { e.buka++; return; }   // terbuka: dihitung, belum dinilai
       e.selesai++; if (p.win === 1) e.win++;
@@ -3915,7 +3913,7 @@ if (window.top !== window.self) { try { window.top.location = window.self.locati
     host.appendChild(h);
     var d = bulanScoreRows(bln);
     var tot = { ambil: 0, buka: 0, selesai: 0, win: 0, R: 0 };
-    ["Qkuk", "Gerry"].forEach(function (w) {
+    ["Uul"].forEach(function (w) {
       ["ambil", "buka", "selesai", "win", "R"].forEach(function (f) { tot[f] += d[w][f]; });
     });
     var rows = el("div", "rows");
@@ -3928,7 +3926,7 @@ if (window.top !== window.self) { try { window.top.location = window.self.locati
     }
     if (!tot.ambil) {
       baris("total", "belum ada trade bulan ini", "mut");
-      baris("Qkuk · Gerry", "0 · 0", "mut");
+      baris("Uul", "0", "mut");
     } else {
       if (tot.buka) {
         baris("total trade", tot.ambil + " (terbuka " + tot.buka + ") · win " + tot.win
@@ -3944,11 +3942,11 @@ if (window.top !== window.self) { try { window.top.location = window.self.locati
     }
     host.appendChild(rows);
     var grid = el("div", "ls-grid");
-    ["Qkuk", "Gerry"].forEach(function (w) {
-      var e = d[w], c = el("div", "ch ls-kartu " + (w === "Gerry" ? "gerry" : "qkuk"));
+    ["Uul"].forEach(function (w) {
+      var e = d[w], c = el("div", "ch ls-kartu qkuk");
       var hh = el("div", "ch-h");
       hh.appendChild(el("span", "ch-n", w));
-      hh.appendChild(el("span", "ch-tf", w === "Gerry" ? "Admin2" : "Admin"));
+      hh.appendChild(el("span", "ch-tf", "Admin"));
       c.appendChild(hh);
       var rw = el("div", "rows");
       function rr(a, b, cls) { var x2 = el("div", "row"); x2.appendChild(el("span", "l", a));
@@ -3971,18 +3969,17 @@ if (window.top !== window.self) { try { window.top.location = window.self.locati
     host.appendChild(grid);
     /* 12 Okt — prioritas-4: baris arsip bulan lalu (per admin + total) */
     var lam = (bln !== bulanSekarang)
-      ? { Qkuk: { ambil:0, buka:0, selesai:0, win:0, R:0 }, Gerry: { ambil:0, buka:0, selesai:0, win:0, R:0 } }
+      ? { Uul: { ambil:0, buka:0, selesai:0, win:0, R:0 } }
       : lamaScoreRows();
-    if (lam.Qkuk.ambil || lam.Gerry.ambil) {
+    if (lam.Uul.ambil) {
       var barL = el("div", "ls-lama");
       function selL(w, e) { return tblLine(w, e); }
       barL.appendChild(el("span", "ls-lama-judul", "bulan lalu:"));
       barL.appendChild(el("span", null, tblLine("total", {
-        ambil: lam.Qkuk.ambil + lam.Gerry.ambil, buka: lam.Qkuk.buka + lam.Gerry.buka,
-        selesai: lam.Qkuk.selesai + lam.Gerry.selesai,
-        win: lam.Qkuk.win + lam.Gerry.win, R: lam.Qkuk.R + lam.Gerry.R })));
-      barL.appendChild(el("span", null, tblLine("Qkuk", lam.Qkuk)));
-      barL.appendChild(el("span", null, tblLine("Gerry", lam.Gerry)));
+        ambil: lam.Uul.ambil, buka: lam.Uul.buka,
+        selesai: lam.Uul.selesai,
+        win: lam.Uul.win, R: lam.Uul.R })));
+      barL.appendChild(el("span", null, tblLine("Uul", lam.Uul)));
       host.appendChild(barL);
     }
     host.appendChild(el("div", "cap",
@@ -4104,7 +4101,7 @@ if (window.top !== window.self) { try { window.top.location = window.self.locati
           var keys2 = Object.keys(j.picks || {}).sort();
           var akhir2 = keys2.length ? keys2[keys2.length - 1] : "-";
           var hari2 = wibDate(new Date().toISOString());
-          var mat2 = "qkuk-tulisan|" + akhir2 + "|" + keys2.length + "|" + hari2 + "|" + (j.sigBy || "Qkuk");
+          var mat2 = "qkuk-tulisan|" + akhir2 + "|" + keys2.length + "|" + hari2 + "|" + (j.sigBy || "Uul");
           sha256hex(mat2).then(function (h2) {
             if (h2 !== j.sig) {
               var ada = document.getElementById("qk-err");
