@@ -1823,7 +1823,7 @@ if (window.top !== window.self) { try { window.top.location = window.self.locati
   try {
     var _eqf = JSON.parse(localStorage.getItem("qkuk_eq_filter") || "null");
     if (_eqf && typeof _eqf === "object") {
-      if (["all", "Qkuk", "Gerry"].indexOf(_eqf.who) >= 0) EQ_FILTER.who = _eqf.who;
+      if (["all", "Qkuk", "Gerry", "Uul"].indexOf(_eqf.who) >= 0) EQ_FILTER.who = _eqf.who;
       if (["all", "week", "month"].indexOf(_eqf.per) >= 0) EQ_FILTER.per = _eqf.per;
     }
   } catch (e) {}
@@ -1850,7 +1850,7 @@ if (window.top !== window.self) { try { window.top.location = window.self.locati
       return b;
     }
     var wrap = el("span", "eq-filt");
-    [["all|semua admin|who"], ["Qkuk|Qkuk|who"], ["Gerry|Gerry|who"],
+    [["all|semua admin|who"], ["Qkuk|Qkuk|who"], ["Gerry|Gerry|who"], ["Uul|Uul|who"],
      ["all|semua waktu|per"], ["week|minggu ini|per"], ["month|bulan ini|per"]]
       .forEach(function (s) {
         var pp = s[0].split("|");
@@ -3384,7 +3384,7 @@ if (window.top !== window.self) { try { window.top.location = window.self.locati
      — bukan backtest. */
   var TXTDB_ID = "qkuk-53bc732eb802f8c087142876"; // penyimpanan cloud live picks (textdb.dev)
   var PICKS = {};
-  /* 11 Okt — DUA ADMIN (permintaan user): Qkuk + Admin2 (Gerry). Username
+  /* 11 Okt — DUA ADMIN (permintaan user): Qkuk + Admin2 (Gerry); 22 Okt + uul. Username
      disimpan DENGAN BESAR-KECIL persis apa adanya, tapi pencocokan login
      TIDAK PEDULI besar-kecil (jaga-jaga ketik "admin2"). Di kode hanya
      SHA-256 dari "username:password" — tidak ada kredensial mentah. Nama
@@ -3392,7 +3392,9 @@ if (window.top !== window.self) { try { window.top.location = window.self.locati
      live score & kotak analisis — KONSTAN, tidak boleh diganti. */
   var ADMINS = {
     "admin":  { who: "Qkuk",  hash: "d78f6114b477459dfaacf645a3d5453b33437cce560a016ffbc2051408d3caa0" },
-    "Admin2": { who: "Gerry", hash: "b12039778e31e421be674d6b5f02b126b95f5fcd7fd506b142a56062bbf3e313" }
+    "Admin2": { who: "Gerry", hash: "b12039778e31e421be674d6b5f02b126b95f5fcd7fd506b142a56062bbf3e313" },
+    /* 22 Okt: akun uul (pemilik) — username "uul" */
+    "uul":    { who: "Uul",   hash: "ae9b93d7908bf5e120bdf33ba78007f690271d2c57a74354a638c223afac448f" }
   };
   /* 26 Sep — CHECKLIST ALASAN AMBIL POSISI: setiap pick bisa dicatat alasannya
      (struktur/setup yang bikin admin ambil posisi) beserta TIMEFRAME masing2
